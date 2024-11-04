@@ -1,0 +1,37 @@
+[
+  {
+    "objectID": 2,
+    "name": "Bronze Sword",
+    "examine": "A razor sharp sword.",
+    "isWieldable": true,
+    "spriteName": "bronze_sword.png"
+  },
+  {
+    "objectID": 3,
+    "name": "Iron Sword",
+    "examine": "A razor sharp sword.",
+    "isWieldable": true,
+    "spriteName": "iron_sword.png"
+  },
+  {
+    "objectID": 4,
+    "name": "Egg",
+    "examine": "A nice fresh egg.",
+    "isWieldable": true,
+    "spriteName": "egg.png"
+  },
+  {
+    "objectID": 5,
+    "name": "Bucket of Milk",
+    "examine": "A nice large bucket of milk.",
+    "isWieldable": false,
+    "spriteName": "bucket_of_milk.png"
+  },
+  {
+    "objectID": 6,
+    "name": "Pot of Flour",
+    "examine": "A pot filled with flour.",
+    "isWieldable": false,
+    "spriteName": "pot_of_flour.png"
+  }
+]

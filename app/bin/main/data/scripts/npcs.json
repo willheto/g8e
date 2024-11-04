@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Grizzly bear",
+    "examine": "A big bear.",
+    "id": 1,
+    "x": 28,
+    "y": 27,
+    "actions": ["Walk here", "Attack", "Examine"],
+    "skills": [1154, 1154, 5, 1, 1, 1, 2411],
+    "respawnTime": 20,
+    "type": 2,
+    "isHuman": false,
+    "sprites": [
+      "bearUpLeft1",
+      "bearUpLeft2",
+      "bearUpLeft3",
+      "bearUpRight1",
+      "bearUpRight2",
+      "bearUpRight3",
+      "bearDownLeft1",
+      "bearDownLeft2",
+      "bearDownLeft3",
+      "bearDownRight1",
+      "bearDownRight2",
+      "bearDownRight3"
+    ]
+  },
+  {
+    "name": "Cook",
+    "examine": "A master of the culinary arts.",
+    "id": 2,
+    "x": 20,
+    "y": 20,
+    "actions": ["Talk-to", "Examine"],
+    "skills": [1, 1, 1, 1, 1, 1, 1],
+    "respawnTime": 0,
+    "type": 1,
+    "isHuman": true,
+    "sprites": [],
+    "relatedQuests": [1]
+  }
+]

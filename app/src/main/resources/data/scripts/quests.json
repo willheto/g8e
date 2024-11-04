@@ -1,0 +1,12 @@
+[
+  {
+    "id": 0,
+    "name": "Cook's Assistant",
+    "description": "The cook needs help making a cake.",
+    "rewards": {
+      "skillRewards": {
+        "cooking": 300
+      }
+    }
+  }
+]
