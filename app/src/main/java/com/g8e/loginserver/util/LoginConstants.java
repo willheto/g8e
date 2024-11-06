@@ -1,7 +1,11 @@
 package com.g8e.loginserver.util;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 public class LoginConstants {
-    public static final int LOGIN_SERVER_PORT = 8886;
+    static Dotenv dotenv = Dotenv.load();
+    
+    public static final int LOGIN_SERVER_PORT = Integer.parseInt(dotenv.get("LOGIN_SERVER_PORT"));
 
     // Login request constants
     public static final int LOGIN = 1;

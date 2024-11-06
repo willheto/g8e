@@ -3,6 +3,7 @@ package com.g8e.gameserver.models;
 import com.g8e.gameserver.World;
 import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
+import com.g8e.util.Logger;
 
 public class Npc extends Combatant {
     private int respawnTime;
@@ -33,10 +34,29 @@ public class Npc extends Combatant {
         }
 
         if (this.targetedEntityID == null || this.isTargetTileNotWithinWanderArea()) {
-            this.setNewTargetTileWithingWanderArea();
+
+            // 20% chance to set new target
+            if (Math.random() < 0.10) {
+                this.setNewTargetTileWithingWanderArea();
+            }
+
         }
 
         this.updateCounters();
+
+        if (this.targetedEntityID != null) {
+            if (isOneStepAwayFromTarget()) {
+                Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
+                if (entity != null && entity instanceof Combatant) {
+                    ((Combatant) this).attackEntity((Combatant) entity);
+                    this.nextTileDirection = null;
+                    this.targetTile = null;
+                    this.newTargetTile = null;
+                    this.targetEntityLastPosition = null;
+                    return;
+                }
+            }
+        }
 
         if (this.targetedEntityID != null) {
             if (this.followCounter > 0) {
@@ -46,10 +66,24 @@ public class Npc extends Combatant {
             }
         } else {
             this.moveTowardsTarget();
+
         }
     }
 
- 
+    private boolean isOneStepAwayFromTarget() {
+        Entity target = this.world.getEntityByID(this.targetedEntityID);
+        if (target == null) {
+            Logger.printError("Target not found");
+            return false;
+        }
+
+        if ((Math.abs(this.worldX - target.worldX) == 1 && this.worldY == target.worldY) ||
+                (Math.abs(this.worldY - target.worldY) == 1 && this.worldX == target.worldX)) {
+            return true;
+        }
+
+        return false;
+    }
 
     private void updateCounters() {
         if (this.attackTickCounter > 0) {
@@ -75,6 +109,7 @@ public class Npc extends Combatant {
         this.newTargetTile = null;
         this.targetedEntityID = null;
         this.targetObjectID = null;
+        this.nextTileDirection = null;
         this.currentHitpoints = ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS]);
         this.worldX = this.originalWorldX;
         this.worldY = this.originalWorldY;

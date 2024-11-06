@@ -139,10 +139,8 @@ public class RegisterServer {
 
         // Add CORS headers
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*"); // Allow all origins
-        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "POST, GET, OPTIONS"); // Allow specific
-                                                                                                 // methods
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "POST, GET, OPTIONS"); // Allow specific                                                                             // methods
         exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type"); // Allow specific headers
-
         exchange.sendResponseHeaders(statusCode, jsonResponse.getBytes().length);
 
         try (OutputStream responseBody = exchange.getResponseBody()) {

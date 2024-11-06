@@ -1,9 +1,12 @@
 package com.g8e.updateserver.util;
 
-public class UpdateConstants {
+import io.github.cdimascio.dotenv.Dotenv;
 
-    public static final int UPDATE_SERVER_PORT = 8887;
-    public static final int CACHE_VERSION = 806;
+public class UpdateConstants {
+    static Dotenv dotenv = Dotenv.load();
+
+    public static final int UPDATE_SERVER_PORT = Integer.parseInt(dotenv.get("UPDATE_SERVER_PORT"));
+    public static final int CACHE_VERSION = 814;
 
     public static final int UPDATE_REQUEST_CHECK_FOR_UPDATES = 1;
     public static final int UPDATE_RESPONSE_CACHE_UP_TO_DATE = 1;

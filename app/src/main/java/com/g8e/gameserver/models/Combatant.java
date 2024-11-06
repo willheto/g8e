@@ -2,6 +2,7 @@ package com.g8e.gameserver.models;
 
 import com.g8e.gameserver.World;
 import com.g8e.gameserver.util.CombatUtils;
+import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
 import com.g8e.util.Logger;
 
@@ -15,7 +16,6 @@ public abstract class Combatant extends Entity {
     public int lastDamageDealtCounter;
     public int attackTickCounter;
     public int hpBarCounter;
-    public boolean autoRetaliate;
     public int combatLevel;
     public int weapon;
     public AttackStyle attackStyle;
@@ -36,8 +36,9 @@ public abstract class Combatant extends Entity {
 
         this.attackTickCounter = 4; // TODO FIX TO WEAPON SPEED
 
-        int attackChance = CombatUtils.getAttackHitChance(this.skills[SkillUtils.ATTACK],
-                entity.skills[SkillUtils.DEFENCE]);
+        int attackChance = CombatUtils.calculateHitChance(
+                ExperienceUtils.getLevelByExp(this.skills[SkillUtils.ATTACK]),
+                ExperienceUtils.getLevelByExp(entity.skills[SkillUtils.DEFENCE]), 0, 0);
 
         int attackDamage = CombatUtils.getAttackDamage(this.skills[SkillUtils.STRENGTH],
                 3); // TODO FIX TO WEAPON DAMAGE
@@ -53,6 +54,9 @@ public abstract class Combatant extends Entity {
         entity.hpBarCounter = 10;
         entity.isHpBarShown = true;
 
+        AttackEvent attackEvent = new AttackEvent(this.entityID, entity.entityID);
+        this.world.tickAttackEvents.add(attackEvent);
+
         if (entity.currentHitpoints <= 0) {
             this.clearTarget();
             if (entity instanceof Npc) {
@@ -63,13 +67,17 @@ public abstract class Combatant extends Entity {
 
         }
 
-        if (entity.targetedEntityID == null && entity.autoRetaliate == true) {
-            entity.targetedEntityID = this.entityID;
+        this.followCounter = 2;
 
-            entity.newTargetTile = new TilePosition(this.worldX, this.worldY);
+        if (entity instanceof Npc) {
+            if (entity.targetedEntityID == null) {
+                entity.targetedEntityID = this.entityID;
+                entity.targetTile = null;
+                entity.newTargetTile = null;
+                entity.targetObjectID = null;
+            }
         }
 
-        this.followCounter = 2;
     }
 
     private void clearTarget() {

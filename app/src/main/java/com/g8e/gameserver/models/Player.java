@@ -6,10 +6,13 @@ import com.g8e.db.models.DBPlayer;
 import com.g8e.gameserver.World;
 import com.g8e.gameserver.models.Quest.Quest;
 import com.g8e.gameserver.models.Quest.QuestReward;
-import com.g8e.gameserver.network.QuestProgressUpdate;
 import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
 import com.g8e.util.Logger;
+import com.g8e.gameserver.network.actions.Action;
+import com.g8e.gameserver.network.actions.PlayerAttackMove;
+import com.g8e.gameserver.network.actions.PlayerMove;
+import com.g8e.gameserver.tile.TilePosition;
 
 public class Player extends Combatant {
     public int accountID;
@@ -20,23 +23,48 @@ public class Player extends Combatant {
     public Player(World world, DBPlayer dbPlayer, String uniquePlayerID, String username, int accountID) {
         super(uniquePlayerID, world, dbPlayer.getWorldX(), dbPlayer.getWorldY(), username, "Another player", 0);
         this.accountID = accountID;
-        this.autoRetaliate = false;
         this.currentHitpoints = ExperienceUtils.getLevelByExp(dbPlayer.getHitpointsExperience());
 
-        Logger.printDebug("super + " + dbPlayer.getHitpointsExperience());
         this.loadPlayerSkills(dbPlayer);
-        Logger.printDebug(username + " has " + this.skills[0] + " attack xp");
         this.combatLevel = this.getCombatLevel();
-        Logger.printDebug(username + " has " + this.combatLevel + " combat level");
         this.weapon = dbPlayer.getWeapon();
-        Logger.printDebug(username + " has " + this.weapon + " weapon");
         this.loadPlayerInventory(dbPlayer);
-        Logger.printDebug(username + " has " + this.inventory[0] + " in inventory");
     }
 
     public void update() {
         this.updateCounters();
+
+        if (this.targetedEntityID != null) {
+            if (isOneStepAwayFromTarget()) {
+                Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
+                if (entity != null && entity instanceof Combatant) {
+                    Logger.printInfo("Attacking entity");
+                    ((Combatant) this).attackEntity((Combatant) entity);
+                    this.nextTileDirection = null;
+                    this.targetTile = null;
+                    this.newTargetTile = null;
+                    this.targetEntityLastPosition = null;
+                    return;
+                }
+            }
+        }
+
         this.moveTowardsTarget();
+    }
+
+    private boolean isOneStepAwayFromTarget() {
+        Entity target = this.world.getEntityByID(this.targetedEntityID);
+        if (target == null) {
+            Logger.printError("Target not found");
+            return false;
+        }
+
+        if ((Math.abs(this.worldX - target.worldX) == 1 && this.worldY == target.worldY) ||
+                (Math.abs(this.worldY - target.worldY) == 1 && this.worldX == target.worldX)) {
+            return true;
+        }
+
+        return false;
     }
 
     public void takeItem(Item item) {
@@ -106,70 +134,20 @@ public class Player extends Combatant {
 
     public void setTickActions(List<Action> actions) {
         for (Action action : actions) {
-            switch (action.getAction()) {
-                case "playerMove":
-                    TilePosition newTargetTile = (TilePosition) action.getData();
-                    TilePosition currentTile = new TilePosition(this.worldX, this.worldY);
 
-                    if (newTargetTile == this.targetTile || newTargetTile.equals(currentTile)) {
-                        return;
-                    }
+            if (action instanceof PlayerMove) {
+                PlayerMove playerMove = (PlayerMove) action;
+                this.newTargetTile = new TilePosition(playerMove.getX(), playerMove.getY());
+                this.targetObjectID = null;
+                this.targetedEntityID = null;
+            }
 
-                    this.newTargetTile = newTargetTile;
-                    this.targetObjectID = null;
-                    this.targetedEntityID = null;
-                    break;
-
-                case "playerAttackMove":
-                    this.targetObjectID = null;
-                    this.newTargetTile = null;
-                    this.targetTile = null;
-                    this.targetedEntityID = null;
-
-                    String targetedEntityID = (String) action.getData();
-                    Npc targetedNpc = this.world.getNpcs().stream()
-                            .filter(npc -> npc.entityID.equals(targetedEntityID)).findFirst().orElse(null);
-
-                    if (targetedNpc == null) {
-                        Logger.printError("Targeted NPC not found");
-                        return;
-                    }
-
-                    this.newTargetTile = new TilePosition(targetedNpc.worldX, targetedNpc.worldY);
-                    break;
-
-                case "changeAttackStyle":
-                    this.attackStyle = (AttackStyle) action.getData();
-                    break;
-
-                case "inventoryUpdate":
-                    int[] requestedInventory = (int[]) action.getData();
-                    this.updateInventoryOrder(requestedInventory);
-                    break;
-
-                case "wieldItem":
-                    int inventoryIndex = (int) action.getData();
-                    wieldWeapon(inventoryIndex);
-                    break;
-
-                case "unwieldItem":
-                    int combatEquipmentIndex = (int) action.getData();
-                    unwieldItem(combatEquipmentIndex);
-                    break;
-
-                case "dropItem":
-                    int inventoryIndexToDrop = (int) action.getData();
-                    dropItem(inventoryIndexToDrop);
-                    break;
-
-                case "questProgressUpdate":
-                    QuestProgressUpdate progressUpdate = (QuestProgressUpdate) action.getData();
-                    questProgressUpdate(progressUpdate.getQuestId(), progressUpdate.getProgress());
-                    break;
-
-                default:
-                    Logger.printError("Unknown action: " + action.getAction());
-                    break;
+            if (action instanceof PlayerAttackMove) {
+                PlayerAttackMove playerAttackMove = (PlayerAttackMove) action;
+                Entity npc = this.world.getEntityByID(playerAttackMove.getEntityID());
+                this.newTargetTile = new TilePosition(npc.worldX, npc.worldY);
+                this.targetedEntityID = playerAttackMove.getEntityID();
+                this.targetObjectID = null;
             }
         }
     }
@@ -348,9 +326,11 @@ public class Player extends Combatant {
         this.targetedEntityID = null;
         this.targetObjectID = null;
         this.hpBarCounter = 0;
-        this.lastDamageDealt = 0;
+        this.lastDamageDealt = null;
         this.lastDamageDealtCounter = 0;
         this.attackTickCounter = 0;
+        this.currentPath = null;
+        this.nextTileDirection = null;
     }
 
 }

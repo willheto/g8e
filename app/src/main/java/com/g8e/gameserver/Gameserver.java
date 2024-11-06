@@ -16,21 +16,22 @@ import com.g8e.gameserver.network.WebSocketEventsHandler;
 import com.g8e.util.Logger;
 import com.google.gson.Gson;
 
-public class Gameserver extends WebSocketServer {
+import io.github.cdimascio.dotenv.Dotenv;
 
-    private final static int port = 8080;
+public class GameServer extends WebSocketServer {
+    static Dotenv dotenv = Dotenv.load();
+
     private final WebSocketEventsHandler eventsHandler;
     private final World world = new World(gameState -> broadcastGameState(gameState));
 
-    public Gameserver() {
-        super(new InetSocketAddress(port));
+    public GameServer() {
+        super(new InetSocketAddress(Integer.parseInt(dotenv.get("GAME_SERVER_PORT"))));
         this.eventsHandler = new WebSocketEventsHandler(world);
     }
 
     public void startServer() {
         try {
             start();
-         
             world.start();
             handleConsoleInput();
         } catch (Exception e) {
@@ -62,9 +63,8 @@ public class Gameserver extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println(
-                "Closed " + conn.getRemoteSocketAddress() + " with exit code " + code + " additional info: " + reason);
-        world.removePlayer(conn.getRemoteSocketAddress().toString());
+        Logger.printInfo(conn + " has disconnected");
+        world.removePlayer(conn.toString());
     }
 
     @Override

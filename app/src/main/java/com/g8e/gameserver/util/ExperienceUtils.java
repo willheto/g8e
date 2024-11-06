@@ -44,10 +44,4 @@ public class ExperienceUtils {
         return experienceDifference - (experience - calculateExperienceDifference(currentLevel));
     }
 
-    public static void main(String[] args) {
-        System.out.println("Level by experience 1000: " + getLevelByExp(1000));
-        System.out.println("Experience for level 5: " + getExpByLevel(5));
-        System.out.println("Experience difference for level 5: " + calculateExperienceDifference(5));
-        System.out.println("Experience until next level from 1000 exp: " + getExperienceUntilNextLevel(1000));
-    }
 }

@@ -13,9 +13,7 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,12 +37,7 @@ public class LoginServer extends WebSocketServer {
     }
 
     public void startServer() throws IOException {
-        try {
-            start();
-            handleConsoleInput();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
+        start();
     }
 
     @Override
@@ -230,16 +223,6 @@ public class LoginServer extends WebSocketServer {
     @Override
     public void onStart() {
         Logger.printInfo("Login server started on port: " + getPort());
-    }
-
-    private void handleConsoleInput() throws IOException, InterruptedException {
-        try (BufferedReader sysin = new BufferedReader(new InputStreamReader(System.in))) {
-            String input;
-            while ((input = sysin.readLine()) != null && !input.equals("exit")) {
-                broadcast(input);
-            }
-        }
-
     }
 
 }

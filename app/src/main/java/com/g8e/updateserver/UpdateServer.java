@@ -2,6 +2,7 @@ package com.g8e.updateserver;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+
 import com.g8e.updateserver.AssetLoader.Asset;
 import com.g8e.updateserver.models.UpdateRequest;
 import com.g8e.updateserver.models.UpdateResponse;
@@ -11,9 +12,7 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -23,18 +22,14 @@ public class UpdateServer extends WebSocketServer {
 
     private final Gson gson = new Gson();
 
-    public UpdateServer(int port) throws IOException {
-        super(new InetSocketAddress(port));
+    public UpdateServer() throws IOException {
+
+        super(new InetSocketAddress(UpdateConstants.UPDATE_SERVER_PORT));
         setConnectionLostTimeout(100); // Customize timeout settings
     }
 
     public void startServer() throws IOException {
-        try {
-            start();
-            handleConsoleInput();
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
+        start();
     }
 
     @Override
@@ -86,16 +81,6 @@ public class UpdateServer extends WebSocketServer {
     @Override
     public void onStart() {
         Logger.printInfo("Update server started on port: " + getPort());
-    }
-
-    private void handleConsoleInput() throws IOException, InterruptedException {
-        try (BufferedReader sysin = new BufferedReader(new InputStreamReader(System.in))) {
-            String input;
-            while ((input = sysin.readLine()) != null && !input.equals("exit")) {
-                broadcast(input);
-            }
-        }
-
     }
 
 }
