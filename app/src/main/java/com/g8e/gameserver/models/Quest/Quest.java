@@ -5,14 +5,14 @@ public class Quest {
     private String name;
     private String description;
     private int[] skillRequirements;
-    private QuestReward reward;
+    private QuestReward rewards;
 
-    public Quest(int questID, String name, String description, int[] skillRequirements, QuestReward reward) {
+    public Quest(int questID, String name, String description, int[] skillRequirements, QuestReward rewards) {
         this.questID = questID;
         this.name = name;
         this.description = description;
         this.skillRequirements = skillRequirements;
-        this.reward = reward;
+        this.rewards = rewards;
     }
 
     public int getQuestID() {
@@ -47,12 +47,12 @@ public class Quest {
         this.skillRequirements = skillRequirements;
     }
 
-    public QuestReward getReward() {
-        return reward;
+    public QuestReward getRewards() {
+        return rewards;
     }
 
-    public void setReward(QuestReward reward) {
-        this.reward = reward;
+    public void setRewards(QuestReward rewards) {
+        this.rewards = rewards;
     }
 
 }

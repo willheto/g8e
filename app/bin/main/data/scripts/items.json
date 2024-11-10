@@ -1,37 +1,34 @@
 [
   {
-    "objectID": 2,
-    "name": "Bronze Sword",
+    "itemID": 99,
+    "name": "Steel Sword",
     "examine": "A razor sharp sword.",
     "isWieldable": true,
-    "spriteName": "bronze_sword.png"
+    "isEdible": false,
+    "spriteName": "item_99.png"
   },
   {
-    "objectID": 3,
-    "name": "Iron Sword",
-    "examine": "A razor sharp sword.",
+    "itemID": 12,
+    "name": "Steel axe",
+    "examine": "Should be able to cut down trees with this.",
     "isWieldable": true,
-    "spriteName": "iron_sword.png"
+    "isEdible": false,
+    "spriteName": "item_12.png"
   },
   {
-    "objectID": 4,
-    "name": "Egg",
-    "examine": "A nice fresh egg.",
-    "isWieldable": true,
-    "spriteName": "egg.png"
-  },
-  {
-    "objectID": 5,
-    "name": "Bucket of Milk",
-    "examine": "A nice large bucket of milk.",
+    "itemID": 36,
+    "name": "Duke's scroll",
+    "examine": "A scroll with the king's seal. I better not lose this.",
     "isWieldable": false,
-    "spriteName": "bucket_of_milk.png"
+    "isEdible": false,
+    "spriteName": "item_36.png"
   },
   {
-    "objectID": 6,
-    "name": "Pot of Flour",
-    "examine": "A pot filled with flour.",
+    "itemID": 64,
+    "name": "Apple",
+    "examine": "A juicy green apple.",
     "isWieldable": false,
-    "spriteName": "pot_of_flour.png"
+    "isEdible": true,
+    "spriteName": "item_64.png"
   }
 ]

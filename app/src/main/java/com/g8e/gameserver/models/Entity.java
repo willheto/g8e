@@ -10,6 +10,7 @@ import com.g8e.gameserver.tile.TilePosition;
 
 public abstract class Entity {
     public String entityID;
+    public int entityIndex;
     public transient World world;
 
     public int originalWorldX;
@@ -22,20 +23,21 @@ public abstract class Entity {
     public Direction nextTileDirection = null;
 
     public String name;
-    public String examineText;
+    public String examine;
     public int type; // 0 = player, 1 = npc, 2 = monster
 
     protected int tickCounter = 0;
     public int followCounter = 0;
     public int shouldFollow = 0;
-    public String targetObjectID = null;
+    public String targetItemID = null;
     public Direction facingDirection = Direction.DOWN;
 
     public int wanderAreaFromOriginalTile = 5;
-    protected List<PathNode> currentPath;
+    public List<PathNode> currentPath;
     protected TilePosition targetEntityLastPosition;
 
-    public Entity(String entityID, World world, int worldX, int worldY, String name, String examineText, int type) {
+    public Entity(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
+            int type) {
         this.entityID = entityID;
         this.world = world;
         this.originalWorldX = worldX;
@@ -43,8 +45,9 @@ public abstract class Entity {
         this.worldX = worldX;
         this.worldY = worldY;
         this.name = name;
-        this.examineText = examineText;
+        this.examine = examine;
         this.type = type;
+        this.entityIndex = entityIndex;
     }
 
     public abstract void update();
@@ -177,6 +180,11 @@ public abstract class Entity {
         if (currentPath.size() == 2) {
             PathNode nextStep = currentPath.get(1);
             moveAlongPath(nextStep);
+            if (this.targetItemID != null && this instanceof Player) {
+                ((Player) this).takeItem(targetItemID);
+                this.targetItemID = null;
+
+            }
         } else if (currentPath.size() > 2) {
             PathNode nextStep = currentPath.get(1);
             PathNode nextNextStep = currentPath.get(2);

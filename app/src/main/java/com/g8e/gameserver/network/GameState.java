@@ -5,18 +5,26 @@ import java.util.List;
 import com.g8e.gameserver.models.AttackEvent;
 import com.g8e.gameserver.models.Npc;
 import com.g8e.gameserver.models.Player;
+import com.g8e.gameserver.models.ChatMessage;
+import com.g8e.gameserver.models.Item;
 
 public class GameState {
     private List<AttackEvent> tickAttackEvents;
     private List<Player> players;
     private List<Npc> npcs;
+    private List<ChatMessage> chatMessages;
     private String playerID;
+    private List<Item> items;
 
-    public GameState(List<AttackEvent> tickAttackEvents, List<Player> players, List<Npc> npcs, String playerID) {
+    public GameState(List<AttackEvent> tickAttackEvents, List<Player> players, List<Npc> npcs,
+            List<ChatMessage> chatMessages, List<Item> items, String playerID) {
         this.tickAttackEvents = tickAttackEvents;
         this.players = players;
         this.npcs = npcs;
         this.playerID = playerID;
+        this.chatMessages = chatMessages;
+        this.items = items;
+
     }
 
     public List<Player> getPlayers() {
@@ -41,6 +49,14 @@ public class GameState {
 
     public void setTickAttackEvents(List<AttackEvent> tickAttackEvents) {
         this.tickAttackEvents = tickAttackEvents;
+    }
+
+    public List<ChatMessage> getChatMessages() {
+        return chatMessages;
+    }
+
+    public void setChatMessages(List<ChatMessage> chatMessages) {
+        this.chatMessages = chatMessages;
     }
 
 }

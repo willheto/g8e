@@ -20,8 +20,9 @@ public abstract class Combatant extends Entity {
     public int weapon;
     public AttackStyle attackStyle;
 
-    public Combatant(String entityID, World world, int worldX, int worldY, String name, String examine, int type) {
-        super(entityID, world, worldX, worldY, name, examine, type);
+    public Combatant(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
+            int type) {
+        super(entityID, entityIndex, world, worldX, worldY, name, examine, type);
     }
 
     public void attackEntity(Combatant entity) {
@@ -34,19 +35,28 @@ public abstract class Combatant extends Entity {
             return;
         }
 
-        this.attackTickCounter = 4; // TODO FIX TO WEAPON SPEED
+        Wieldable weapon = this.world.itemsManager.getWieldableInfoByItemID(this.weapon);
 
+        this.attackTickCounter = weapon != null ? weapon.getAttackSpeed() : 4;
+
+        int accuracyBonus = weapon != null ? weapon.getAccuracyBonus() : 0;
         int attackChance = CombatUtils.calculateHitChance(
                 ExperienceUtils.getLevelByExp(this.skills[SkillUtils.ATTACK]),
-                ExperienceUtils.getLevelByExp(entity.skills[SkillUtils.DEFENCE]), 0, 0);
+                ExperienceUtils.getLevelByExp(entity.skills[SkillUtils.DEFENCE]), accuracyBonus, 0);
 
+        int attackBonus = weapon != null ? weapon.getAttackBonus() : 0;
         int attackDamage = CombatUtils.getAttackDamage(this.skills[SkillUtils.STRENGTH],
-                3); // TODO FIX TO WEAPON DAMAGE
+                attackBonus);
 
         boolean isDamageDealt = Math.random() * 100 < attackChance;
 
         if (isDamageDealt) {
             entity.currentHitpoints -= attackDamage;
+
+            if (this instanceof Player) {
+                ((Player) this).addXp(SkillUtils.ATTACK, 50);
+
+            }
         }
 
         entity.lastDamageDealt = isDamageDealt ? attackDamage : 0;
@@ -61,6 +71,20 @@ public abstract class Combatant extends Entity {
             this.clearTarget();
             if (entity instanceof Npc) {
                 ((Npc) entity).isDead = true;
+
+                EntityData entityData = this.world.entitiesManager.getEntityDataByIndex(entity.entityIndex);
+
+                if (entityData.dropTable != null) {
+                    for (int i = 0; i < entityData.dropTable.length; i++) {
+                        int itemID = entityData.dropTable[i].getItemID();
+
+                        // Roll for drop
+                        if (Math.random() < entityData.dropTable[i].getDropChance()) {
+                            this.world.itemsManager.spawnItem(entity.worldX, entity.worldY, itemID);
+                        }
+
+                    }
+                }
             } else if (entity instanceof Player) {
                 ((Player) entity).killPlayer();
             }
@@ -74,7 +98,7 @@ public abstract class Combatant extends Entity {
                 entity.targetedEntityID = this.entityID;
                 entity.targetTile = null;
                 entity.newTargetTile = null;
-                entity.targetObjectID = null;
+                entity.targetItemID = null;
             }
         }
 

@@ -6,15 +6,22 @@ import java.io.InputStreamReader;
 import java.net.URL;
 
 import com.g8e.gameserver.World;
+import com.g8e.gameserver.models.Edible;
 import com.g8e.gameserver.models.Item;
+import com.g8e.gameserver.models.Wieldable;
+import com.g8e.util.Logger;
 import com.google.gson.Gson;
 
 public class ItemsManager {
     private Item[] items = new Item[1000];
+    private Wieldable[] wieldables = new Wieldable[100];
+    private Edible[] edibles = new Edible[100];
     private World world;
 
     public ItemsManager(World world) {
         loadItems();
+        loadWieldables();
+        loadEdibles();
         this.world = world;
     }
 
@@ -34,18 +41,90 @@ public class ItemsManager {
         }
     }
 
+    private void loadWieldables() {
+        URL wieldablesUrl = getClass().getResource("/data/scripts/wieldables.json");
+
+        if (wieldablesUrl == null) {
+            throw new IllegalArgumentException("Resource not found: /data/wieldables.json");
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(wieldablesUrl.openStream()))) {
+            Gson gson = new Gson();
+            Wieldable[] loadedWieldables = gson.fromJson(reader, Wieldable[].class);
+            System.arraycopy(loadedWieldables, 0, wieldables, 0, loadedWieldables.length);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadEdibles() {
+        URL ediblesUrl = getClass().getResource("/data/scripts/edibles.json");
+
+        if (ediblesUrl == null) {
+            throw new IllegalArgumentException("Resource not found: /data/edibles.json");
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(ediblesUrl.openStream()))) {
+            Gson gson = new Gson();
+            Edible[] loadedEdibles = gson.fromJson(reader, Edible[].class);
+            System.arraycopy(loadedEdibles, 0, edibles, 0, loadedEdibles.length);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public Item getItemByID(int itemID) {
-        return items[itemID];
+        for (Item item : items) {
+            if (item != null && item.getItemID() == itemID) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    public Item getItemByUniqueItemID(String uniqueItemID) {
+        for (Item item : world.items) {
+            Logger.printDebug(uniqueItemID + " == " + item.getUniqueID());
+            Logger.printDebug(uniqueItemID.equals(item.getUniqueID()) + "");
+            if (item.getUniqueID().equals(uniqueItemID)) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    public Edible getEdibleInfoByItemID(int itemID) {
+        for (Edible edible : edibles) {
+            if (edible != null && edible.getItemID() == itemID) {
+                return edible;
+            }
+        }
+
+        return null;
     }
 
     public void spawnItem(int x, int y, int itemID) {
         Item item = getItemByID(itemID);
         item.setWorldX(x);
         item.setWorldY(y);
+        String uniqueID = "item_" + item.getName() + "_" + x + "_" + y + "_" + System.currentTimeMillis();
+        item.setUniqueID(uniqueID);
         world.items.add(item);
     }
 
     public void removeItem(String uniqueItemID) {
         world.items.removeIf(item -> item.getUniqueID().equals(uniqueItemID));
+    }
+
+    public Wieldable getWieldableInfoByItemID(int itemID) {
+        for (Wieldable wieldable : wieldables) {
+            if (wieldable != null && wieldable.getItemID() == itemID) {
+                return wieldable;
+            }
+        }
+
+        return null;
     }
 }

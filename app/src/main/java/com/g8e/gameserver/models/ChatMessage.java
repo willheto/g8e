@@ -1,31 +1,31 @@
 package com.g8e.gameserver.models;
 
 public class ChatMessage {
-    private String playerID;
-    private String timeSent;
+    private String senderName;
     private String message;
-    private boolean isPrivate;
+    private long timeSent;
+    private boolean isGlobal;
 
-    public ChatMessage(String playerID, String message, boolean isPrivate) {
-        this.playerID = playerID;
+    public ChatMessage(String senderName, String message, long timeSent, boolean isGlobal) {
+        this.senderName = senderName;
         this.message = message;
-        this.timeSent = java.time.LocalDateTime.now().toString();
-        this.isPrivate = isPrivate;
-    }
-
-    public String getPlayerID() {
-        return playerID;
+        this.timeSent = timeSent;
+        this.isGlobal = isGlobal;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public String getTimeSent() {
+    public long getTimeSent() {
         return timeSent;
     }
 
-    public boolean isPrivate() {
-        return isPrivate;
+    public boolean isGlobal() {
+        return isGlobal;
+    }
+
+    public String getSenderName() {
+        return senderName;
     }
 }

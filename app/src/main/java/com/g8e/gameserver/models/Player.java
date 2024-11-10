@@ -10,18 +10,25 @@ import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
 import com.g8e.util.Logger;
 import com.g8e.gameserver.network.actions.Action;
+import com.g8e.gameserver.network.actions.DropItemAction;
+import com.g8e.gameserver.network.actions.EatItemAction;
 import com.g8e.gameserver.network.actions.PlayerAttackMove;
 import com.g8e.gameserver.network.actions.PlayerMove;
+import com.g8e.gameserver.network.actions.PlayerTakeMoveAction;
+import com.g8e.gameserver.network.actions.QuestProgressUpdateAction;
+import com.g8e.gameserver.network.actions.UnwieldAction;
+import com.g8e.gameserver.network.actions.UseItemAction;
+import com.g8e.gameserver.network.actions.WieldItemAction;
 import com.g8e.gameserver.tile.TilePosition;
 
 public class Player extends Combatant {
     public int accountID;
 
-    public int[] inventory = new int[28];
+    public int[] inventory = new int[20];
     public int[] questProgress = new int[10];
 
     public Player(World world, DBPlayer dbPlayer, String uniquePlayerID, String username, int accountID) {
-        super(uniquePlayerID, world, dbPlayer.getWorldX(), dbPlayer.getWorldY(), username, "Another player", 0);
+        super(uniquePlayerID, 0, world, dbPlayer.getWorldX(), dbPlayer.getWorldY(), username, "Another player", 0);
         this.accountID = accountID;
         this.currentHitpoints = ExperienceUtils.getLevelByExp(dbPlayer.getHitpointsExperience());
 
@@ -38,7 +45,6 @@ public class Player extends Combatant {
             if (isOneStepAwayFromTarget()) {
                 Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
                 if (entity != null && entity instanceof Combatant) {
-                    Logger.printInfo("Attacking entity");
                     ((Combatant) this).attackEntity((Combatant) entity);
                     this.nextTileDirection = null;
                     this.targetTile = null;
@@ -67,7 +73,9 @@ public class Player extends Combatant {
         return false;
     }
 
-    public void takeItem(Item item) {
+    public void takeItem(String uniqueItemID) {
+
+        Item item = this.world.itemsManager.getItemByUniqueItemID(uniqueItemID);
         int emptySlot = getEmptyInventorySlot();
 
         if (emptySlot == -1) {
@@ -96,12 +104,14 @@ public class Player extends Combatant {
             this.skills[skill] = 200_000_000;
         }
 
-        String levelUpMessage = "Congratulations, you've just advanced a " + SkillUtils.getSkillNameByNumber(skill)
-                + " level! Your " + SkillUtils.getSkillNameByNumber(skill) + " level is now " + currentLevel + ".";
-
         if (currentLevel > previousLevel) {
-            this.world.chatMessages.add(new ChatMessage(this.entityID,
-                    levelUpMessage, true));
+
+            String levelUpMessage = "Congratulations, you've just advanced a " + SkillUtils.getSkillNameByNumber(skill)
+                    + " level! Your " + SkillUtils.getSkillNameByNumber(skill) + " level is now " + currentLevel + ".";
+
+            long timeSent = System.currentTimeMillis();
+            ChatMessage chatMessageModel = new ChatMessage(this.name, levelUpMessage, timeSent, false);
+            this.world.chatMessages.add(chatMessageModel);
 
         }
 
@@ -138,7 +148,7 @@ public class Player extends Combatant {
             if (action instanceof PlayerMove) {
                 PlayerMove playerMove = (PlayerMove) action;
                 this.newTargetTile = new TilePosition(playerMove.getX(), playerMove.getY());
-                this.targetObjectID = null;
+                this.targetItemID = null;
                 this.targetedEntityID = null;
             }
 
@@ -147,12 +157,101 @@ public class Player extends Combatant {
                 Entity npc = this.world.getEntityByID(playerAttackMove.getEntityID());
                 this.newTargetTile = new TilePosition(npc.worldX, npc.worldY);
                 this.targetedEntityID = playerAttackMove.getEntityID();
-                this.targetObjectID = null;
+                this.targetItemID = null;
+            }
+
+            if (action instanceof DropItemAction) {
+                DropItemAction dropItemAction = (DropItemAction) action;
+                this.dropItem(dropItemAction.getInventoryIndex());
+            }
+
+            if (action instanceof WieldItemAction) {
+                WieldItemAction wieldItemAction = (WieldItemAction) action;
+                this.wieldWeapon(wieldItemAction.getInventoryIndex());
+            }
+
+            if (action instanceof PlayerTakeMoveAction) {
+                PlayerTakeMoveAction playerTakeMoveAction = (PlayerTakeMoveAction) action;
+                this.handlePlayerTakeMove(playerTakeMoveAction.getUniqueItemID());
+            }
+
+            if (action instanceof UseItemAction) {
+                UseItemAction useItemAction = (UseItemAction) action;
+                this.useItem(useItemAction.getItemID(), useItemAction.getTargetID());
+            }
+
+            if (action instanceof UnwieldAction) {
+                UnwieldAction unwieldAction = (UnwieldAction) action;
+                this.unwieldItem(unwieldAction.getInventoryIndex());
+            }
+
+            if (action instanceof EatItemAction) {
+                EatItemAction eatItemAction = (EatItemAction) action;
+                this.eatItem(eatItemAction.getInventoryIndex());
+            }
+
+            if (action instanceof QuestProgressUpdateAction) {
+                QuestProgressUpdateAction questProgressUpdateAction = (QuestProgressUpdateAction) action;
+                this.questProgressUpdate(questProgressUpdateAction.getQuestID(),
+                        questProgressUpdateAction.getProgress());
             }
         }
     }
 
+    private void eatItem(int inventoryIndex) {
+        if (inventoryIndex < 0 || inventoryIndex >= this.inventory.length) {
+            Logger.printError("Invalid inventory index");
+            return;
+        }
+
+        int itemID = this.inventory[inventoryIndex];
+        Item item = this.world.itemsManager.getItemByID(itemID);
+        Edible edible = this.world.itemsManager.getEdibleInfoByItemID(itemID);
+
+        if (item == null) {
+            Logger.printError("Item not found or not edible");
+            return;
+        }
+
+        this.inventory[inventoryIndex] = 0;
+        this.currentHitpoints += edible.getHealAmount();
+        this.world.chatMessages
+                .add(new ChatMessage(this.name, "You eat the " + item.getName() + ". " + "It heals some health.",
+                        System.currentTimeMillis(),
+                        false));
+
+        if (this.currentHitpoints > ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS])) {
+            this.currentHitpoints = ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS]);
+        }
+
+    }
+
+    private void useItem(int itemID, int targetID) {
+        this.world.chatMessages
+                .add(new ChatMessage(this.name, "Nothing interesting happens.", System.currentTimeMillis(), false));
+
+    }
+
+    private void handlePlayerTakeMove(String uniqueItemID) {
+        Item item = this.world.itemsManager.getItemByUniqueItemID(uniqueItemID);
+        if (item == null) {
+
+            this.world.chatMessages
+                    .add(new ChatMessage(this.name, "Too late, it's gone!", System.currentTimeMillis(), false));
+            return;
+        }
+
+        if (item.getWorldX() == this.worldX && item.getWorldY() == this.worldY) {
+            this.takeItem(uniqueItemID);
+            return;
+        }
+
+        this.targetItemID = uniqueItemID;
+        this.newTargetTile = new TilePosition(item.getWorldX(), item.getWorldY());
+    }
+
     private void questProgressUpdate(int questID, int progress) {
+        Logger.printDebug("Quest progress update: " + questID + " " + progress);
         if (questID < 0 || questID >= this.questProgress.length) {
             Logger.printError("Invalid quest ID");
             return;
@@ -161,11 +260,15 @@ public class Player extends Combatant {
         this.questProgress[questID] = progress;
 
         if (progress == 100) {
-            this.world.chatMessages
-                    .add(new ChatMessage(this.entityID, "Congratulations, you've completed a quest!", true));
+
+            ChatMessage chatMessage = new ChatMessage(this.name, "Congratulations, you've completed a quest!",
+                    System.currentTimeMillis(), false);
+            this.world.chatMessages.add(chatMessage);
 
             Quest quest = this.world.questsManager.getQuestByID(questID);
-            QuestReward reward = quest.getReward();
+            Logger.printDebug(quest.getName());
+
+            QuestReward reward = quest.getRewards();
 
             int[] skillRewards = reward.getSkillRewards();
             for (int i = 0; i < skillRewards.length; i++) {
@@ -210,37 +313,35 @@ public class Player extends Combatant {
             return;
         }
 
+        if (this.weapon == itemID) {
+            this.weapon = 0;
+        }
+
         this.inventory[inventoryIndex] = 0;
+
         this.world.itemsManager.spawnItem(this.worldX, this.worldY, itemID);
     }
 
-    private void unwieldItem(int combatEquipmentIndex) {
-        if (combatEquipmentIndex < 0 || combatEquipmentIndex >= 3) {
-            Logger.printError("Invalid combat equipment index");
+    private void unwieldItem(int inventoryIndex) {
+        if (inventoryIndex < 0 || inventoryIndex >= this.inventory.length) {
+            Logger.printError("Invalid inventory index");
             return;
         }
 
-        if (combatEquipmentIndex == 0) { // weapon
-            if (this.weapon == 0) {
-                Logger.printError("No weapon to unwield");
-                return;
-            }
+        int itemID = this.inventory[inventoryIndex];
+        Item item = this.world.itemsManager.getItemByID(itemID);
 
-            // get first empty slot in inventory
-            int emptySlot = -1;
-            for (int i = 0; i < this.inventory.length; i++) {
-                if (this.inventory[i] == 0) {
-                    emptySlot = i;
-                    break;
-                }
-            }
+        if (item == null) {
+            Logger.printError("Item not found");
+            return;
+        }
 
-            if (emptySlot == -1) {
-                Logger.printError("No empty inventory slots");
-                return;
-            }
+        if (item.isWieldable() == false) {
+            Logger.printError("Item is not wieldable");
+            return;
+        }
 
-            this.inventory[emptySlot] = this.weapon;
+        if (this.weapon == itemID) {
             this.weapon = 0;
         }
 
@@ -263,12 +364,6 @@ public class Player extends Combatant {
         if (item.isWieldable() == false) {
             Logger.printError("Item is not wieldable");
             return;
-        }
-
-        if (this.weapon != 0) {
-            this.inventory[inventoryIndex] = this.weapon;
-        } else {
-            this.inventory[inventoryIndex] = 0;
         }
 
         this.weapon = itemID;
@@ -314,7 +409,11 @@ public class Player extends Combatant {
     }
 
     private void loadPlayerInventory(DBPlayer player) {
-        this.inventory = player.getInventory();
+
+        this.inventory = new int[20];
+        for (int i = 0; i < player.getInventory().length; i++) {
+            this.inventory[i] = player.getInventory()[i];
+        }
     }
 
     public void killPlayer() {
@@ -324,7 +423,7 @@ public class Player extends Combatant {
         this.targetTile = null;
         this.newTargetTile = null;
         this.targetedEntityID = null;
-        this.targetObjectID = null;
+        this.targetItemID = null;
         this.hpBarCounter = 0;
         this.lastDamageDealt = null;
         this.lastDamageDealtCounter = 0;

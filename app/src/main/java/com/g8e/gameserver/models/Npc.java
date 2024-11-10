@@ -10,9 +10,10 @@ public class Npc extends Combatant {
     private int respawnTickCounter;
     public boolean isDead;
 
-    public Npc(World world, int worldX, int worldY, String name, String examine, int respawnTime, int[] skills,
+    public Npc(World world, int entityIndex, int worldX, int worldY, String name, String examine, int respawnTime,
+            int[] skills,
             int type) {
-        super("npc" + (int) (Math.random() * 1000000), world, worldX, worldY, name, examine, type);
+        super("npc" + (int) (Math.random() * 1000000), entityIndex, world, worldX, worldY, name, examine, type);
 
         this.respawnTime = respawnTime;
         this.skills = skills;
@@ -108,7 +109,7 @@ public class Npc extends Combatant {
         this.targetTile = null;
         this.newTargetTile = null;
         this.targetedEntityID = null;
-        this.targetObjectID = null;
+        this.targetItemID = null;
         this.nextTileDirection = null;
         this.currentHitpoints = ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS]);
         this.worldX = this.originalWorldX;

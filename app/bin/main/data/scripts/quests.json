@@ -1,12 +1,11 @@
 [
   {
     "id": 0,
-    "name": "Cook's Assistant",
-    "description": "The cook needs help making a cake.",
+    "name": "Zeroes on board",
+    "description": "Duke Eldric faces a dire crisis—every supply convoy sent to his keep returns empty or vanishes without a trace, leaving his stores dangerously low. Rumors of a curse called “Zeroes on Board” haunt the kingdom.",
     "rewards": {
-      "skillRewards": {
-        "cooking": 300
-      }
+      "skillRewards": [],
+      "itemRewards": [99]
     }
   }
 ]

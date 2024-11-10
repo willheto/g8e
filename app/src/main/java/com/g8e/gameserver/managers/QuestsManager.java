@@ -19,7 +19,7 @@ public class QuestsManager {
         URL questsUrl = getClass().getResource("/data/scripts/quests.json");
 
         if (questsUrl == null) {
-            throw new IllegalArgumentException("Resource not found: /data/Quests.json");
+            throw new IllegalArgumentException("Resource not found: /data/quests.json");
         }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(questsUrl.openStream()))) {
@@ -32,7 +32,13 @@ public class QuestsManager {
     }
 
     public Quest getQuestByID(int questID) {
-        return quests[questID];
+        for (Quest quest : quests) {
+            if (quest.getQuestID() == questID) {
+                return quest;
+            }
+        }
+
+        return null;
     }
 
 }

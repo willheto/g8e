@@ -1,0 +1,31 @@
+[
+  {
+    "entityIndex": 1,
+    "name": "Goblin",
+    "examine": "A small, green creature.",
+    "respawnTime": 20,
+    "skills": [0, 0, 0, 1100],
+    "type": 2,
+    "spriteName": "orc",
+    "dropTable": [
+      {
+        "itemID": 36,
+        "dropChance": 0.55
+      },
+      {
+        "itemID": 64,
+        "dropChance": 0.75
+      }
+    ]
+  },
+  {
+    "entityIndex": 2,
+    "name": "Eldric Highfall",
+    "examine": "Some say he's the best swordsman in the land.",
+    "respawnTime": 20,
+    "skills": [0, 0, 0, 1100],
+    "type": 1,
+    "spriteName": "duke",
+    "dropTable": []
+  }
+]

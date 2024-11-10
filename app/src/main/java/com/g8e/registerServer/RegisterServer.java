@@ -116,7 +116,7 @@ public class RegisterServer {
                 var statement = connection.prepareStatement(SQL_INSERT_PLAYER)) {
             statement.setInt(1, accountID); // account_id
             // int32 array of 0s length 28
-            int[] inventory = new int[28];
+            int[] inventory = new int[20];
             int[] questProgress = new int[5];
 
             statement.setString(2, gson.toJson(inventory)); // inventory
