@@ -1,10 +1,15 @@
 package com.g8e.gameserver.network;
 
 import org.java_websocket.WebSocket;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import com.g8e.db.CommonQueries;
 import com.g8e.db.models.DBAccount;
@@ -16,14 +21,18 @@ import com.g8e.gameserver.network.actions.ChatMessageAction;
 import com.g8e.gameserver.network.actions.DropItemAction;
 import com.g8e.gameserver.network.actions.EatItemAction;
 import com.g8e.gameserver.models.Player;
-
+import com.g8e.gameserver.models.TalkEvent;
 import com.g8e.gameserver.network.actions.Action;
+import com.g8e.gameserver.network.actions.ChangeAppearanceAction;
+import com.g8e.gameserver.network.actions.ChangeAttackStyleAction;
 import com.g8e.gameserver.network.actions.PlayerAttackMove;
 import com.g8e.gameserver.network.actions.PlayerAttackMoveData;
 import com.g8e.gameserver.network.actions.PlayerMove;
 import com.g8e.gameserver.network.actions.PlayerMoveData;
 import com.g8e.gameserver.network.actions.PlayerTakeMoveAction;
+import com.g8e.gameserver.network.actions.PlayerTalkMoveAction;
 import com.g8e.gameserver.network.actions.QuestProgressUpdateAction;
+import com.g8e.gameserver.network.actions.RemoveItemFromInventoryAction;
 import com.g8e.gameserver.network.actions.UnwieldAction;
 import com.g8e.gameserver.network.actions.UseItemAction;
 import com.g8e.gameserver.network.actions.WieldItemAction;
@@ -38,10 +47,22 @@ public class WebSocketEventsHandler {
 
     }
 
+    public byte[] compress(String data) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_COMPRESSION))) {
+            dos.write(data.getBytes());
+            dos.close();
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public void handleConnection(WebSocket conn, Map<String, String> queryParams) {
         String loginToken = queryParams.get("loginToken");
         if (loginToken == null) {
-            System.out.println("Player connected without login token");
+            Logger.printError("Player connected without login token");
             conn.close();
             return;
         }
@@ -50,7 +71,7 @@ public class WebSocketEventsHandler {
         try {
             account = CommonQueries.getAccountByLoginToken(loginToken);
             if (account == null) {
-                System.out.println("Player connected with invalid login token");
+                Logger.printError("Player connected with invalid login token");
                 conn.close();
                 return;
             }
@@ -60,7 +81,7 @@ public class WebSocketEventsHandler {
             player = CommonQueries.getPlayerByAccountId(account.getAccountId());
 
             if (player == null) {
-                System.out.println("Player not found");
+                Logger.printError("Player not found");
                 conn.close();
                 return;
             }
@@ -73,6 +94,7 @@ public class WebSocketEventsHandler {
             world.addPlayer(playerToBeAdded);
 
             List<AttackEvent> attackEvents = new ArrayList<>();
+            List<TalkEvent> talkEvents = new ArrayList<>();
 
             ChatMessage welcomeMessage = new ChatMessage(playerToBeAdded.name, "Welcome to the game!",
                     System.currentTimeMillis(),
@@ -88,12 +110,15 @@ public class WebSocketEventsHandler {
             world.addChatMessage(tutorialMessage);
             world.addChatMessage(tutorialMessage2);
 
-            GameState gameState = new GameState(attackEvents, world.getPlayers(), world.getNpcs(),
+            GameState gameState = new GameState(attackEvents, talkEvents, world.getPlayers(), world.getNpcs(),
                     world.getChatMessages(),
                     world.getItems(),
                     conn.toString());
 
-            conn.send(new Gson().toJson(gameState));
+            String gameStateJson = new Gson().toJson(gameState);
+            byte[] compressedData = compress(gameStateJson);
+
+            conn.send(compressedData);
 
         } catch (SQLException e) {
             Logger.printError(loginToken + " failed to connect to the game server");
@@ -108,6 +133,13 @@ public class WebSocketEventsHandler {
         String playerID = parsedMessage.getPlayerID();
 
         switch (action) {
+            case "ping":
+                conn.send("pong");
+                break;
+            case "changeAppearance":
+                ChangeAppearanceAction changeAppearanceAction = gson.fromJson(message, ChangeAppearanceAction.class);
+                this.world.enqueueAction(changeAppearanceAction);
+                break;
             case "playerMove":
                 PlayerMove playerMoveAction = gson.fromJson(message, PlayerMove.class);
                 int x = playerMoveAction.getX();
@@ -166,6 +198,19 @@ public class WebSocketEventsHandler {
                         QuestProgressUpdateAction.class);
                 this.world.enqueueAction(questProgressUpdateAction);
                 break;
+            case "playerTalkMove":
+                PlayerTalkMoveAction playerTalkMoveAction = gson.fromJson(message, PlayerTalkMoveAction.class);
+                this.world.enqueueAction(playerTalkMoveAction);
+                break;
+            case "changeAttackStyle":
+                ChangeAttackStyleAction changeAttackStyleAction = gson.fromJson(message, ChangeAttackStyleAction.class);
+                this.world.enqueueAction(changeAttackStyleAction);
+                break;
+            case "removeItemFromInventory":
+                RemoveItemFromInventoryAction removeItemFromInventoryAction = gson.fromJson(message,
+                        RemoveItemFromInventoryAction.class);
+                this.world.enqueueAction(removeItemFromInventoryAction);
+                break;
             /*
              * case "changeAttackStyle":
              * String attackStyle = (String) parsedMessage.getData();
@@ -184,35 +229,12 @@ public class WebSocketEventsHandler {
              * new Action(conn.toString(), "unwildItem", combatEquipmentIndex));
              * break;
              * 
-             * case "dropItem":
-             * int inventoryIndexToDrop = (int) parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "dropItem", inventoryIndexToDrop));
-             * break;
-             * 
-             * case "questProgressUpdate":
-             * QuestProgressUpdate progressUpdate = (QuestProgressUpdate)
-             * parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "questProgressUpdate", progressUpdate));
-             * break;
-             * 
-             * case "playerTakeMove":
-             * String itemUniqueID = (String) parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "playerTakeMove", itemUniqueID));
-             * break;
-             * 
              * case "removeItemsFromInventory":
              * int[] itemIndices = (int[]) parsedMessage.getData();
              * this.world.enqueueAction(
              * new Action(conn.toString(), "removeItemsFromInventory", itemIndices));
              * break;
              * 
-             * case "chatMessage":
-             * // String chatMessage = (String) parsedMessage.getData();
-             * // TODO: Implement chat
-             * break;
              */
 
             default:

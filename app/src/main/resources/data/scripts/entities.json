@@ -27,5 +27,78 @@
     "type": 1,
     "spriteName": "duke",
     "dropTable": []
+  },
+  {
+    "entityIndex": 3,
+    "name": "Man",
+    "examine": "One of the many people in the land.",
+    "respawnTime": 25,
+    "skills": [0, 0, 0, 1100],
+    "type": 2,
+    "spriteName": "man",
+    "palette": [1, 1, 1],
+    "dropTable": []
+  },
+  {
+    "entityIndex": 4,
+    "name": "Man",
+    "examine": "One of the many people in the land.",
+    "respawnTime": 25,
+    "skills": [0, 0, 0, 1100],
+    "type": 2,
+    "spriteName": "man",
+    "palette": [2, 2, 1],
+    "dropTable": []
+  },
+  {
+    "entityIndex": 5,
+    "name": "Man",
+    "examine": "One of the many people in the land.",
+    "respawnTime": 25,
+    "skills": [0, 0, 0, 1100],
+    "type": 2,
+    "spriteName": "man",
+    "palette": [3, 1, 1],
+    "dropTable": []
+  },
+  {
+    "entityIndex": 6,
+    "name": "Priest of the Light",
+    "examine": "He's gone a bit mad, honestly.",
+    "respawnTime": 25,
+    "skills": [0, 0, 0, 1100],
+    "type": 1,
+    "spriteName": "oldman",
+    "dropTable": []
+  },
+  {
+    "entityIndex": 7,
+    "name": "Guard",
+    "examine": "A guard of the city.",
+    "respawnTime": 25,
+    "skills": [5000, 5000, 10000, 1100],
+    "type": 1,
+    "spriteName": "guard",
+    "dropTable": []
+  },
+  {
+    "entityIndex": 8,
+    "name": "Bat",
+    "examine": "Some people eat these. Gross.",
+    "respawnTime": 25,
+    "skills": [0, 0, 0, 600],
+    "type": 2,
+    "spriteName": "bat",
+    "dropTable": []
+  },
+  {
+    "entityIndex": 9,
+    "name": "Slime",
+    "examine": "A blob of goo.",
+    "respawnTime": 25,
+    "skills": [0, 0, 2000, 1600],
+    "type": 2,
+    "spriteName": "slime",
+    "dropTable": []
   }
 ]

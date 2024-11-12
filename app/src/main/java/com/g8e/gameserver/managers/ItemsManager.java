@@ -9,7 +9,6 @@ import com.g8e.gameserver.World;
 import com.g8e.gameserver.models.Edible;
 import com.g8e.gameserver.models.Item;
 import com.g8e.gameserver.models.Wieldable;
-import com.g8e.util.Logger;
 import com.google.gson.Gson;
 
 public class ItemsManager {
@@ -85,8 +84,6 @@ public class ItemsManager {
 
     public Item getItemByUniqueItemID(String uniqueItemID) {
         for (Item item : world.items) {
-            Logger.printDebug(uniqueItemID + " == " + item.getUniqueID());
-            Logger.printDebug(uniqueItemID.equals(item.getUniqueID()) + "");
             if (item.getUniqueID().equals(uniqueItemID)) {
                 return item;
             }
@@ -107,11 +104,15 @@ public class ItemsManager {
 
     public void spawnItem(int x, int y, int itemID) {
         Item item = getItemByID(itemID);
-        item.setWorldX(x);
-        item.setWorldY(y);
+
+        Item newItem = new Item(item.getItemID(), item.getName(), item.getExamine(), item.isWieldable(),
+                item.getSpriteName());
+        newItem.setWorldX(x);
+        newItem.setWorldY(y);
         String uniqueID = "item_" + item.getName() + "_" + x + "_" + y + "_" + System.currentTimeMillis();
-        item.setUniqueID(uniqueID);
-        world.items.add(item);
+
+        newItem.setUniqueID(uniqueID);
+        world.items.add(newItem);
     }
 
     public void removeItem(String uniqueItemID) {

@@ -107,10 +107,10 @@ public class RegisterServer {
 
     private void createPlayer(int accountID, HttpExchange exchange) throws IOException {
         String SQL_INSERT_PLAYER = "INSERT INTO players "
-                + "(account_id, world_x, world_y, weapon, inventory, "
+                + "(account_id, skin_color, hair_color, shirt_color, world_x, world_y, weapon, inventory, "
                 + "quest_progress, attack_experience, defence_experience, "
                 + "strength_experience, hitpoints_experience) "
-                + "VALUES (?, 20, 20, 1, ?, ?, 0, 0, 0, 1200)";
+                + "VALUES (?, 0, 0, 0, 75, 25, null, ?, ?, 0, 0, 0, 1200)";
 
         try (Connection connection = DatabaseConnection.createDatabaseConnection();
                 var statement = connection.prepareStatement(SQL_INSERT_PLAYER)) {

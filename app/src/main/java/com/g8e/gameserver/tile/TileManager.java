@@ -4,26 +4,43 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import javax.imageio.ImageIO;
+
 import com.g8e.gameserver.World;
+import java.awt.image.BufferedImage;
 
 public class TileManager {
 
     private World world;
     public Tile[] tile;
-    public int[][] mapTileNum;
+    public int[][] mapTileNumLayer1;
+    public int[][] mapTileNumLayer2;
+    public int[][] mapTileNumLayer3;
+    public int[][] mapTileNumLayer4;
 
     public TileManager(World world) {
         this.world = world;
-        tile = new Tile[50];
-        mapTileNum = new int[world.maxWorldCol][world.maxWorldRow];
+        tile = new Tile[8000];
 
-        getTiles();
-        loadMap("/data/map/tutorial_island.txt");
+        // Initialize tile maps for each layer
+        mapTileNumLayer1 = new int[world.maxWorldCol][world.maxWorldRow];
+        mapTileNumLayer2 = new int[world.maxWorldCol][world.maxWorldRow];
+        mapTileNumLayer3 = new int[world.maxWorldCol][world.maxWorldRow];
+        mapTileNumLayer4 = new int[world.maxWorldCol][world.maxWorldRow];
+
+        getTiles(); // Set all tiles with no collision
+        loadMap("/data/map/worldmap_back_1.csv", 1); // Load layer 1 map
+        loadMap("/data/map/worldmap_back_2.csv", 2); // Load layer 2 map
+        loadMap("/data/map/worldmap_fore_1.csv", 3); // Load layer 3 map
+        loadMap("/data/map/worldmap_fore_2.csv", 4); // Load layer 3 map
+
     }
 
     public Tile getTileByXandY(int x, int y) {
         try {
-            int index = mapTileNum[x][y];
+            // For now, return the tile from Layer 1 (you could modify to return tiles from
+            // other layers)
+            int index = mapTileNumLayer1[x][y];
             return tile[index];
         } catch (Exception e) {
             e.printStackTrace();
@@ -31,59 +48,101 @@ public class TileManager {
         return null;
     }
 
+    public boolean getCollisionByXandY(int x, int y) {
+        try {
+            // Check if x and y are within the bounds of the map arrays
+            if (x < 0 || y < 0 || x >= mapTileNumLayer1.length || y >= mapTileNumLayer1[0].length) {
+                return false; // Out of bounds, no collision
+            }
+
+            int index1 = mapTileNumLayer1[x][y];
+            int index2 = mapTileNumLayer2[x][y];
+            int index3 = mapTileNumLayer3[x][y];
+            int index4 = mapTileNumLayer4[x][y];
+            // Check for valid tile indices and if any of them have a collision
+            if ((index1 >= 0 && tile[index1].collision) ||
+                    (index2 >= 0 && tile[index2].collision) ||
+                    (index3 >= 0 && tile[index3].collision) ||
+                    (index4 >= 0 && tile[index4].collision)) {
+                return true;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public void getTiles() {
         try {
-            this.setup(0, true);
-            this.setup(1, true);
-            this.setup(2, true);
-            this.setup(3, true);
-            this.setup(4, true);
-            this.setup(5, true);
-            this.setup(6, true);
-            this.setup(7, true);
-            this.setup(8, true);
+            BufferedImage tileSheet = ImageIO.read(getClass().getResourceAsStream("/data/map/tilesheet.png"));
 
-            this.setup(9, false);
+            // split tile sheet into 16 x 16 tiles
+            int numTilesAcross = tileSheet.getWidth() / 16;
+            tile = new Tile[numTilesAcross * numTilesAcross];
 
-            this.setup(10, false);
+            for (int col = 0; col < numTilesAcross; col++) {
+                for (int row = 0; row < numTilesAcross; row++) {
+                    int index = col + row * numTilesAcross;
+                    if (index == 1158 || index == 1159 || index == 1270 || index == 1271) { // water
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 3512 && index <= 3519) { // fences part 1
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 3624 && index <= 3631) { // fences part 2
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 3736 && index <= 3743) { // fences part 3
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 3848 && index <= 3855) { // fences part 4
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 3960 && index <= 3967) { // fences part 5
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4184 && index <= 4191) { // fences part 6
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 3601 && index <= 3614) { // tree trunks
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4056 && index <= 4059) { // tree trunks
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4168 && index <= 4171) { // tree trunks
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4833 && index <= 4846) { // tree trunks
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4721 && index <= 4734) { // tree trunks
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 1424 && index <= 1431) { // walls
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 1312 && index <= 1319) { // walls
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 1200 && index <= 1207) { // walls
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4587 && index <= 4590) { // bench
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4699 && index <= 4702) { // bench
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4362 && index <= 4367) { // boxes
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4474 && index <= 4478) { // boxes
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 1088 && index <= 1095) { // walls
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 976 && index <= 983) { // walls
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4408 && index <= 4415) { // walls
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4284 && index <= 4287) { // bushes
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4396 && index <= 4399) { // bushes
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4084 && index <= 4087) { // wells
+                        tile[index] = new Tile(true, index);
+                    } else if (index >= 4196 && index <= 4199) { // wells
+                        tile[index] = new Tile(true, index);
+                    }
 
-            this.setup(12, true);
-
-            this.setup(13, true);
-            this.setup(14, true);
-
-            this.setup(15, true);
-            this.setup(16, true);
-            this.setup(17, true);
-            this.setup(18, true);
-
-            this.setup(19, true);
-            this.setup(21, false);
-            this.setup(22, false);
-            this.setup(24, false);
-            this.setup(25, false);
-            this.setup(26, false);
-            this.setup(27, false);
-            this.setup(28, false);
-            this.setup(29, false);
-            this.setup(30, true);
-            this.setup(31, true);
-            this.setup(36, false);
-            this.setup(37, false);
-            this.setup(38, false);
-            this.setup(39, false);
-            this.setup(41, false);
-
-            this.setup(40, false);
-            this.setup(41, false);
-
-            this.setup(42, true);
-
-            this.setup(43, true);
-
-            this.setup(44, true);
-
-            this.setup(45, true);
+                    else {
+                        tile[index] = new Tile(false, index);
+                    }
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -92,14 +151,13 @@ public class TileManager {
     public void setup(int index, boolean collision) {
         try {
             tile[index] = new Tile(collision, index);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void loadMap(String filePath) {
-
+    // Method to load maps for different layers
+    public void loadMap(String filePath, int layer) {
         try {
             InputStream is = getClass().getResourceAsStream(filePath);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -112,10 +170,18 @@ public class TileManager {
 
                 while (col < world.maxWorldCol) {
                     String numbers[] = line.split(",");
-
                     int num = Integer.parseInt(numbers[col]);
 
-                    mapTileNum[col][row] = num;
+                    // Depending on the layer, assign the number to the respective map
+                    if (layer == 1) {
+                        mapTileNumLayer1[col][row] = num;
+                    } else if (layer == 2) {
+                        mapTileNumLayer2[col][row] = num;
+                    } else if (layer == 3) {
+                        mapTileNumLayer3[col][row] = num;
+                    } else if (layer == 4) {
+                        mapTileNumLayer4[col][row] = num;
+                    }
                     col++;
                 }
                 if (col == world.maxWorldCol) {
@@ -129,4 +195,5 @@ public class TileManager {
             e.printStackTrace();
         }
     }
+
 }

@@ -1,7 +1,9 @@
 package com.g8e.gameserver.models;
 
+import java.sql.SQLException;
 import java.util.List;
 
+import com.g8e.db.CommonQueries;
 import com.g8e.db.models.DBPlayer;
 import com.g8e.gameserver.World;
 import com.g8e.gameserver.models.Quest.Quest;
@@ -9,13 +11,18 @@ import com.g8e.gameserver.models.Quest.QuestReward;
 import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
 import com.g8e.util.Logger;
+import com.google.gson.Gson;
 import com.g8e.gameserver.network.actions.Action;
+import com.g8e.gameserver.network.actions.ChangeAppearanceAction;
+import com.g8e.gameserver.network.actions.ChangeAttackStyleAction;
 import com.g8e.gameserver.network.actions.DropItemAction;
 import com.g8e.gameserver.network.actions.EatItemAction;
 import com.g8e.gameserver.network.actions.PlayerAttackMove;
 import com.g8e.gameserver.network.actions.PlayerMove;
 import com.g8e.gameserver.network.actions.PlayerTakeMoveAction;
+import com.g8e.gameserver.network.actions.PlayerTalkMoveAction;
 import com.g8e.gameserver.network.actions.QuestProgressUpdateAction;
+import com.g8e.gameserver.network.actions.RemoveItemFromInventoryAction;
 import com.g8e.gameserver.network.actions.UnwieldAction;
 import com.g8e.gameserver.network.actions.UseItemAction;
 import com.g8e.gameserver.network.actions.WieldItemAction;
@@ -26,9 +33,14 @@ public class Player extends Combatant {
 
     public int[] inventory = new int[20];
     public int[] questProgress = new int[10];
+    public int influence;
+    public int skinColor;
+    public int hairColor;
+    public int shirtColor;
 
     public Player(World world, DBPlayer dbPlayer, String uniquePlayerID, String username, int accountID) {
-        super(uniquePlayerID, 0, world, dbPlayer.getWorldX(), dbPlayer.getWorldY(), username, "Another player", 0);
+        super(uniquePlayerID, 0, world, dbPlayer.getWorldX(), dbPlayer.getWorldY(), username,
+                "That's " + username + "!", 0);
         this.accountID = accountID;
         this.currentHitpoints = ExperienceUtils.getLevelByExp(dbPlayer.getHitpointsExperience());
 
@@ -36,6 +48,24 @@ public class Player extends Combatant {
         this.combatLevel = this.getCombatLevel();
         this.weapon = dbPlayer.getWeapon();
         this.loadPlayerInventory(dbPlayer);
+        this.loadQuestProgress(dbPlayer);
+        this.attackStyle = "attack";
+        this.skinColor = dbPlayer.getSkinColor();
+        this.hairColor = dbPlayer.getHairColor();
+        this.shirtColor = dbPlayer.getShirtColor();
+    }
+
+    private void loadQuestProgress(DBPlayer dbPlayer) {
+        for (int i = 0; i < dbPlayer.getQuestProgress().length; i++) {
+            this.questProgress[i] = dbPlayer.getQuestProgress()[i];
+
+            Quest quest = this.world.questsManager.getQuestByID(i);
+
+            if (dbPlayer.getQuestProgress()[i] == 100 && quest != null) {
+                influence += quest.getRewards().getInfluenceReward();
+            }
+        }
+
     }
 
     public void update() {
@@ -43,14 +73,30 @@ public class Player extends Combatant {
 
         if (this.targetedEntityID != null) {
             if (isOneStepAwayFromTarget()) {
-                Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
-                if (entity != null && entity instanceof Combatant) {
-                    ((Combatant) this).attackEntity((Combatant) entity);
-                    this.nextTileDirection = null;
-                    this.targetTile = null;
-                    this.newTargetTile = null;
-                    this.targetEntityLastPosition = null;
-                    return;
+                if (goalAction == 2) {
+                    Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
+                    if (entity != null && entity instanceof Combatant) {
+                        ((Combatant) this).attackEntity((Combatant) entity);
+                        this.nextTileDirection = null;
+                        this.targetTile = null;
+                        this.newTargetTile = null;
+                        this.targetEntityLastPosition = null;
+                        return;
+                    }
+                } else if (goalAction == 1) {
+                    Entity entity = this.world.getEntityByID(this.targetedEntityID);
+                    if (entity != null && entity instanceof Npc) {
+                        this.nextTileDirection = null;
+                        this.targetTile = null;
+                        this.newTargetTile = null;
+                        this.targetEntityLastPosition = null;
+                        this.goalAction = null;
+                        this.targetedEntityID = null;
+                        TalkEvent talkEvent = new TalkEvent(this.entityID, entity.entityID, entity.entityIndex);
+                        this.world.tickTalkEvents.add(talkEvent);
+                        return;
+                    }
+
                 }
             }
         }
@@ -74,7 +120,6 @@ public class Player extends Combatant {
     }
 
     public void takeItem(String uniqueItemID) {
-
         Item item = this.world.itemsManager.getItemByUniqueItemID(uniqueItemID);
         int emptySlot = getEmptyInventorySlot();
 
@@ -85,6 +130,35 @@ public class Player extends Combatant {
 
         this.inventory[emptySlot] = item.getItemID();
         this.world.itemsManager.removeItem(item.getUniqueID());
+        saveInventory();
+    }
+
+    public void saveQuestProgress() {
+        Gson gson = new Gson();
+        String questProgressString = gson.toJson(this.questProgress);
+        try {
+            CommonQueries.savePlayerQuestProgressByAccountId(this.accountID, questProgressString);
+        } catch (Exception e) {
+            Logger.printError("Failed to save quest progress");
+        }
+    }
+
+    public void savePosition() {
+        try {
+            CommonQueries.savePlayerPositionByAccountId(this.accountID, this.worldX, this.worldY);
+        } catch (Exception e) {
+            Logger.printError("Failed to save player position");
+        }
+    }
+
+    public void saveInventory() {
+        Gson gson = new Gson();
+        String inventoryString = gson.toJson(this.inventory);
+        try {
+            CommonQueries.savePlayerInventoryByAccountId(this.accountID, inventoryString);
+        } catch (Exception e) {
+            Logger.printError("Failed to save inventory");
+        }
     }
 
     public void addXp(int skill, int xp) {
@@ -105,7 +179,6 @@ public class Player extends Combatant {
         }
 
         if (currentLevel > previousLevel) {
-
             String levelUpMessage = "Congratulations, you've just advanced a " + SkillUtils.getSkillNameByNumber(skill)
                     + " level! Your " + SkillUtils.getSkillNameByNumber(skill) + " level is now " + currentLevel + ".";
 
@@ -116,6 +189,15 @@ public class Player extends Combatant {
         }
 
         this.combatLevel = this.getCombatLevel();
+        saveSkillXp(skill);
+    }
+
+    public void saveSkillXp(int skill) {
+        try {
+            CommonQueries.savePlayerXpByAccountId(this.accountID, skill, this.skills[skill]);
+        } catch (Exception e) {
+            Logger.printError("Failed to save skill xp");
+        }
     }
 
     private void updateInventoryOrder(int[] requestedInventory) {
@@ -145,11 +227,26 @@ public class Player extends Combatant {
     public void setTickActions(List<Action> actions) {
         for (Action action : actions) {
 
+            if (action instanceof ChangeAppearanceAction) {
+                ChangeAppearanceAction changeAppearanceAction = (ChangeAppearanceAction) action;
+                this.skinColor = changeAppearanceAction.getSkinColor();
+                this.hairColor = changeAppearanceAction.getHairColor();
+                this.shirtColor = changeAppearanceAction.getShirtColor();
+                try {
+                    CommonQueries.savePlayerAppearanceByAccountId(
+                            this.accountID, this.skinColor, this.hairColor, this.shirtColor);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
             if (action instanceof PlayerMove) {
                 PlayerMove playerMove = (PlayerMove) action;
                 this.newTargetTile = new TilePosition(playerMove.getX(), playerMove.getY());
                 this.targetItemID = null;
                 this.targetedEntityID = null;
+                this.goalAction = null;
             }
 
             if (action instanceof PlayerAttackMove) {
@@ -157,7 +254,7 @@ public class Player extends Combatant {
                 Entity npc = this.world.getEntityByID(playerAttackMove.getEntityID());
                 this.newTargetTile = new TilePosition(npc.worldX, npc.worldY);
                 this.targetedEntityID = playerAttackMove.getEntityID();
-                this.targetItemID = null;
+                this.goalAction = 2; // Attack action TODO
             }
 
             if (action instanceof DropItemAction) {
@@ -173,6 +270,7 @@ public class Player extends Combatant {
             if (action instanceof PlayerTakeMoveAction) {
                 PlayerTakeMoveAction playerTakeMoveAction = (PlayerTakeMoveAction) action;
                 this.handlePlayerTakeMove(playerTakeMoveAction.getUniqueItemID());
+                this.goalAction = null;
             }
 
             if (action instanceof UseItemAction) {
@@ -194,6 +292,34 @@ public class Player extends Combatant {
                 QuestProgressUpdateAction questProgressUpdateAction = (QuestProgressUpdateAction) action;
                 this.questProgressUpdate(questProgressUpdateAction.getQuestID(),
                         questProgressUpdateAction.getProgress());
+            }
+
+            if (action instanceof PlayerTalkMoveAction) {
+                PlayerTalkMoveAction playerTalkMoveAction = (PlayerTalkMoveAction) action;
+
+                Entity entity = this.world.getEntityByID(playerTalkMoveAction.getEntityID());
+                if (entity != null) {
+                    this.targetedEntityID = playerTalkMoveAction.getEntityID();
+                    this.goalAction = 1;
+                    this.newTargetTile = new TilePosition(entity.worldX, entity.worldY);
+                }
+            }
+
+            if (action instanceof ChangeAttackStyleAction) {
+                ChangeAttackStyleAction changeAttackStyleAction = (ChangeAttackStyleAction) action;
+                this.attackStyle = changeAttackStyleAction.getAttackStyle();
+            }
+
+            if(action instanceof RemoveItemFromInventoryAction) {
+                RemoveItemFromInventoryAction removeItemFromInventoryAction = (RemoveItemFromInventoryAction) action;
+                int itemID = removeItemFromInventoryAction.getItemID();
+                for (int i = 0; i < this.inventory.length; i++) {
+                    if (this.inventory[i] == itemID) {
+                        this.inventory[i] = 0;
+                        saveInventory();
+                        break;
+                    }
+                }
             }
         }
     }
@@ -235,7 +361,6 @@ public class Player extends Combatant {
     private void handlePlayerTakeMove(String uniqueItemID) {
         Item item = this.world.itemsManager.getItemByUniqueItemID(uniqueItemID);
         if (item == null) {
-
             this.world.chatMessages
                     .add(new ChatMessage(this.name, "Too late, it's gone!", System.currentTimeMillis(), false));
             return;
@@ -251,23 +376,20 @@ public class Player extends Combatant {
     }
 
     private void questProgressUpdate(int questID, int progress) {
-        Logger.printDebug("Quest progress update: " + questID + " " + progress);
         if (questID < 0 || questID >= this.questProgress.length) {
             Logger.printError("Invalid quest ID");
             return;
         }
 
         this.questProgress[questID] = progress;
+        saveQuestProgress();
 
         if (progress == 100) {
-
             ChatMessage chatMessage = new ChatMessage(this.name, "Congratulations, you've completed a quest!",
                     System.currentTimeMillis(), false);
             this.world.chatMessages.add(chatMessage);
 
             Quest quest = this.world.questsManager.getQuestByID(questID);
-            Logger.printDebug(quest.getName());
-
             QuestReward reward = quest.getRewards();
 
             int[] skillRewards = reward.getSkillRewards();
@@ -286,6 +408,7 @@ public class Player extends Combatant {
                 }
 
                 this.inventory[emptySlot] = itemID;
+                saveInventory();
             }
 
         }
@@ -301,6 +424,14 @@ public class Player extends Combatant {
         return -1;
     }
 
+    public void saveWeapon() {
+        try {
+            CommonQueries.savePlayerWeaponByAccountId(this.accountID, this.weapon);
+        } catch (Exception e) {
+            Logger.printError("Failed to save weapon");
+        }
+    }
+
     private void dropItem(int inventoryIndex) {
         if (inventoryIndex < 0 || inventoryIndex >= this.inventory.length) {
             Logger.printError("Invalid inventory index");
@@ -313,11 +444,13 @@ public class Player extends Combatant {
             return;
         }
 
-        if (this.weapon == itemID) {
-            this.weapon = 0;
+        if (this.weapon != null && this.weapon == inventoryIndex) {
+            this.weapon = null;
+            saveWeapon();
         }
 
         this.inventory[inventoryIndex] = 0;
+        saveInventory();
 
         this.world.itemsManager.spawnItem(this.worldX, this.worldY, itemID);
     }
@@ -341,8 +474,9 @@ public class Player extends Combatant {
             return;
         }
 
-        if (this.weapon == itemID) {
-            this.weapon = 0;
+        if (this.weapon == inventoryIndex) {
+            this.weapon = null;
+            saveWeapon();
         }
 
     }
@@ -366,7 +500,8 @@ public class Player extends Combatant {
             return;
         }
 
-        this.weapon = itemID;
+        this.weapon = inventoryIndex;
+        saveWeapon();
 
     }
 
@@ -430,6 +565,7 @@ public class Player extends Combatant {
         this.attackTickCounter = 0;
         this.currentPath = null;
         this.nextTileDirection = null;
+        this.goalAction = null;
     }
 
 }

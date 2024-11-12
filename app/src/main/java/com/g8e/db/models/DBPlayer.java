@@ -5,15 +5,19 @@ public class DBPlayer {
     private int account_id;
     private int world_x;
     private int world_y;
-    private int weapon;
+    private Integer weapon = null;
     private int[] inventory;
     private int[] quest_progress;
     private int attack_experience;
     private int strength_experience;
     private int defence_experience;
     private int hitpoints_experience;
+    private int skin_color;
+    private int hair_color;
+    private int shirt_color;
 
-    public DBPlayer(int player_id, int account_id, int world_x, int world_y, int weapon, int[] inventory,
+    public DBPlayer(int player_id, int account_id, int skin_color, int hair_color, int shirt_color, int world_x,
+            int world_y, Integer weapon, int[] inventory,
             int[] quest_progress,
             int attack_experience, int strength_experience, int defence_experience, int hitpoints_experience) {
         this.player_id = player_id;
@@ -27,6 +31,21 @@ public class DBPlayer {
         this.defence_experience = defence_experience;
         this.strength_experience = strength_experience;
         this.hitpoints_experience = hitpoints_experience;
+        this.skin_color = skin_color;
+        this.hair_color = hair_color;
+        this.shirt_color = shirt_color;
+    }
+
+    public int getSkinColor() {
+        return skin_color;
+    }
+
+    public int getHairColor() {
+        return hair_color;
+    }
+
+    public int getShirtColor() {
+        return shirt_color;
     }
 
     public int getPlayerID() {
@@ -45,7 +64,7 @@ public class DBPlayer {
         return world_y;
     }
 
-    public int getWeapon() {
+    public Integer getWeapon() {
         return weapon;
     }
 

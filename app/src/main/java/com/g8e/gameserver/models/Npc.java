@@ -18,7 +18,7 @@ public class Npc extends Combatant {
         this.respawnTime = respawnTime;
         this.skills = skills;
         this.currentHitpoints = ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS]);
-        this.weapon = 1;
+        this.weapon = null;
         this.combatLevel = getCombatLevel();
 
     }

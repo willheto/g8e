@@ -1,11 +1,64 @@
 [
   {
-    "id": 0,
-    "name": "Zeroes on board",
-    "description": "Duke Eldric faces a dire crisis—every supply convoy sent to his keep returns empty or vanishes without a trace, leaving his stores dangerously low. Rumors of a curse called “Zeroes on Board” haunt the kingdom.",
+    "questID": 0,
+    "mapProperty": "DUKES_QUEST",
+    "name": "Duke's Quest",
+    "description": "Duke Eldric has lost his intel report, and needs someone to get it back.",
+    "start": "Speak to Duke Eldric in Stonehaven.",
+    "requirements": {
+      "skillRequirements": [],
+      "influenceRequirement": 0,
+      "otherRequirements": ""
+    },
     "rewards": {
       "skillRewards": [],
-      "itemRewards": [99]
+      "itemRewards": [99],
+      "influenceReward": 1
+    },
+    "steps": {
+      "1": {
+        "description": "Duke told me that the intel report was stolen by goblins."
+      }
+    }
+  },
+  {
+    "questID": 1,
+    "mapProperty": "THINGS_GET_FOGGY",
+    "name": "Things get foggy",
+    "description": "The priest of Stonehaven has sent his young acolyte to deliver a message, but he has not returned. The priest is seeking someone to check on him.",
+    "requirements": {
+      "skillRequirements": [],
+      "influenceRequirement": 0,
+      "otherRequirements": ""
+    },
+    "rewards": {
+      "skillRewards": [3000, 0, 0, 0],
+      "itemRewards": [],
+      "influenceReward": 4
+    },
+    "steps": {
+      "1": {
+        "description": "The priest told me his acolyte hasn't returned. Apparently he was heading west, to the village of Eldoria"
+      },
+      "2": {
+        "description": "City of Eldoria seems to be closed off. I need to find another way in."
+      }
+    }
+  },
+  {
+    "questID": 2,
+    "mapProperty": "BANDIT_KING",
+    "name": "The Bandit King",
+    "description": "The Bandit King has been terrorizing the countryside for years. The king is offering a reward to anyone who can bring him to justice.",
+    "requirements": {
+      "skillRequirements": [],
+      "influenceRequirement": 0,
+      "otherRequirements": ""
+    },
+    "rewards": {
+      "skillRewards": [],
+      "itemRewards": [101],
+      "influenceReward": 1
     }
   }
 ]

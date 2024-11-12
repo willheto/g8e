@@ -17,8 +17,8 @@ public abstract class Combatant extends Entity {
     public int attackTickCounter;
     public int hpBarCounter;
     public int combatLevel;
-    public int weapon;
-    public AttackStyle attackStyle;
+    public Integer weapon = null;
+    public String attackStyle;
 
     public Combatant(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
             int type) {
@@ -35,7 +35,10 @@ public abstract class Combatant extends Entity {
             return;
         }
 
-        Wieldable weapon = this.world.itemsManager.getWieldableInfoByItemID(this.weapon);
+        Wieldable weapon = null;
+        if (this instanceof Player && this.weapon != null) {
+            weapon = this.world.itemsManager.getWieldableInfoByItemID(((Player) this).inventory[this.weapon]);
+        }
 
         this.attackTickCounter = weapon != null ? weapon.getAttackSpeed() : 4;
 
@@ -52,9 +55,18 @@ public abstract class Combatant extends Entity {
 
         if (isDamageDealt) {
             entity.currentHitpoints -= attackDamage;
+            int multiplier = 5;
 
             if (this instanceof Player) {
-                ((Player) this).addXp(SkillUtils.ATTACK, 50);
+
+                if (this.attackStyle.equals("attack")) {
+                    ((Player) this).addXp(SkillUtils.ATTACK, (4 * attackDamage) * multiplier);
+                } else if (this.attackStyle.equals("strength")) {
+                    ((Player) this).addXp(SkillUtils.STRENGTH, (4 * attackDamage) * multiplier);
+                } else if (this.attackStyle.equals("defence")) {
+                    ((Player) this).addXp(SkillUtils.DEFENCE, (4 * attackDamage) * multiplier);
+                }
+                ((Player) this).addXp(SkillUtils.HITPOINTS, (1 * attackDamage) * multiplier);
 
             }
         }
@@ -64,7 +76,8 @@ public abstract class Combatant extends Entity {
         entity.hpBarCounter = 10;
         entity.isHpBarShown = true;
 
-        AttackEvent attackEvent = new AttackEvent(this.entityID, entity.entityID);
+        AttackEvent attackEvent = new AttackEvent(this.entityID,
+                entity.entityID);
         this.world.tickAttackEvents.add(attackEvent);
 
         if (entity.currentHitpoints <= 0) {
@@ -104,7 +117,7 @@ public abstract class Combatant extends Entity {
 
     }
 
-    private void clearTarget() {
+    protected void clearTarget() {
         this.targetedEntityID = null;
         this.targetTile = null;
         this.newTargetTile = null;

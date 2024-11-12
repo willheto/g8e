@@ -23,6 +23,9 @@ public class V1_init {
             + "player_id INT AUTO_INCREMENT PRIMARY KEY,"
             + "account_id INT,"
             + "FOREIGN KEY (account_id) REFERENCES accounts(account_id),"
+            + "skin_color INT,"
+            + "hair_color INT,"
+            + "shirt_color INT,"
             + "world_x INT,"
             + "world_y INT,"
             + "weapon INT,"
@@ -36,9 +39,6 @@ public class V1_init {
 
     public void up() {
         try {
-            System.out.println(dotenv.get("DB_URL"));
-            System.out.println(dotenv.get("DB_USERNAME"));
-            System.out.println(dotenv.get("DB_PASSWORD"));
             Connection connection = DriverManager.getConnection(dotenv.get("DB_URL"), dotenv.get("DB_USERNAME"),
                     dotenv.get("DB_PASSWORD"));
             connection.createStatement().executeUpdate(createAccountsTable);
@@ -54,7 +54,7 @@ public class V1_init {
 
     public void down() {
         try {
-            Connection connection = DriverManager.getConnection(dotenv.get("DB_URL"), dotenv.get("DB_USER"),
+            Connection connection = DriverManager.getConnection(dotenv.get("DB_URL"), dotenv.get("DB_USERNAME"),
                     dotenv.get("DB_PASSWORD"));
             connection.createStatement().executeUpdate("DROP TABLE IF EXISTS players;");
             Logger.printInfo("Dropped players table");

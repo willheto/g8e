@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.g8e.gameserver.World;
 import com.g8e.gameserver.enums.Direction;
+import com.g8e.gameserver.pathfinding.AStar;
 import com.g8e.gameserver.pathfinding.PathNode;
 import com.g8e.gameserver.tile.Tile;
 import com.g8e.gameserver.tile.TilePosition;
@@ -12,6 +13,7 @@ public abstract class Entity {
     public String entityID;
     public int entityIndex;
     public transient World world;
+    public transient AStar pathFinder;
 
     public int originalWorldX;
     public int originalWorldY;
@@ -32,9 +34,10 @@ public abstract class Entity {
     public String targetItemID = null;
     public Direction facingDirection = Direction.DOWN;
 
-    public int wanderAreaFromOriginalTile = 5;
+    public int wanderAreaFromOriginalTile = 3;
     public List<PathNode> currentPath;
     protected TilePosition targetEntityLastPosition;
+    protected Integer goalAction = null; // 1 talk, 2 attack
 
     public Entity(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
             int type) {
@@ -48,18 +51,24 @@ public abstract class Entity {
         this.examine = examine;
         this.type = type;
         this.entityIndex = entityIndex;
+        this.pathFinder = new AStar(world);
     }
 
     public abstract void update();
 
     protected void setNewTargetTileWithingWanderArea() {
-        this.newTargetTile = new TilePosition(
+        TilePosition randomPosition = new TilePosition(
                 this.originalWorldX + (int) (Math.random() * (this.wanderAreaFromOriginalTile * 2 + 1)
                         - this.wanderAreaFromOriginalTile),
 
                 this.originalWorldY + (int) (Math.random() * (this.wanderAreaFromOriginalTile * 2 + 1)
                         - this.wanderAreaFromOriginalTile));
 
+        // Check if the new target tile is walkable
+        boolean collision = this.world.tileManager.getCollisionByXandY(randomPosition.x, randomPosition.y);
+        if (!collision) {
+            this.newTargetTile = randomPosition;
+        }
     }
 
     protected boolean isTargetTileNotWithinWanderArea() {
@@ -131,7 +140,6 @@ public abstract class Entity {
     }
 
     protected void moveTowardsTarget() {
-
         if (this instanceof Combatant && ((Combatant) this).targetedEntityID != null) {
             setAttackTargetTile();
         }
@@ -146,7 +154,13 @@ public abstract class Entity {
                 this.worldX = this.currentPath.get(1).x;
                 this.worldY = this.currentPath.get(1).y;
             }
-            currentPath = this.world.pathFinder.findPath(this.worldX, this.worldY, target.x, target.y);
+            currentPath = this.pathFinder.findPath(this.worldX, this.worldY, target.x, target.y);
+
+            if (currentPath.size() == 0) {
+                this.world.chatMessages
+                        .add(new ChatMessage(name, "I can't reach that!", System.currentTimeMillis(), false));
+            }
+
             if (currentPath.size() < 2) {
                 currentPath = null;
                 this.newTargetTile = null;
@@ -165,6 +179,8 @@ public abstract class Entity {
         }
 
         if (currentPath == null || currentPath.size() == 0) {
+            this.world.chatMessages
+                    .add(new ChatMessage(name, "I can't reach that!", System.currentTimeMillis(), false));
             return;
         }
 
@@ -191,6 +207,9 @@ public abstract class Entity {
             moveAlongPath(nextStep, nextNextStep);
         }
 
+        if (this instanceof Player) {
+            ((Player) this).savePosition();
+        }
     }
 
     protected void moveAlongPath(PathNode nextStep, PathNode nextNextStep) {
@@ -199,7 +218,6 @@ public abstract class Entity {
 
         Direction nextTileDirection = this.getDirection(nextNextStep.x - nextStep.x, nextNextStep.y - nextStep.y);
         this.nextTileDirection = nextTileDirection;
-
         currentPath.remove(0);
     }
 
@@ -210,7 +228,6 @@ public abstract class Entity {
         this.worldY = nextStep.y;
         this.targetTile = null;
         currentPath = null;
-
     }
 
     protected Direction getDirection(int deltaX, int deltaY) {
@@ -238,7 +255,6 @@ public abstract class Entity {
     }
 
     protected TilePosition getTarget() {
-
         return this.newTargetTile != null ? this.newTargetTile : this.targetTile;
     }
 

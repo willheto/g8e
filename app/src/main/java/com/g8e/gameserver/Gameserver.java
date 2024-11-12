@@ -1,11 +1,14 @@
 package com.g8e.gameserver;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -79,9 +82,23 @@ public class GameServer extends WebSocketServer {
     }
 
     public void broadcastGameState(GameState gameState) {
+
         String gameStateJson = new Gson().toJson(gameState);
+        byte[] compressedData = compress(gameStateJson);
         for (WebSocket conn : getConnections()) {
-            conn.send(gameStateJson);
+            conn.send(compressedData);
+        }
+    }
+
+    public byte[] compress(String data) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_COMPRESSION))) {
+            dos.write(data.getBytes());
+            dos.close();
+            return baos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

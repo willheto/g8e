@@ -3,10 +3,12 @@ package com.g8e.gameserver.models.Quest;
 public class QuestReward {
     int[] skillRewards;
     int[] itemRewards;
+    int influenceReward;
 
-    public QuestReward(int[] skillRewards, int[] itemRewards) {
+    public QuestReward(int[] skillRewards, int[] itemRewards, int influenceReward) {
         this.skillRewards = skillRewards;
         this.itemRewards = itemRewards;
+        this.influenceReward = influenceReward;
     }
 
     public int[] getSkillRewards() {
@@ -23,6 +25,14 @@ public class QuestReward {
 
     public void setItemRewards(int[] itemRewards) {
         this.itemRewards = itemRewards;
+    }
+
+    public int getInfluenceReward() {
+        return influenceReward;
+    }
+
+    public void setInfluenceReward(int influenceReward) {
+        this.influenceReward = influenceReward;
     }
 
 }

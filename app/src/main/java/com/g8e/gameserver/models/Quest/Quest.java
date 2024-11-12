@@ -4,15 +4,28 @@ public class Quest {
     private int questID;
     private String name;
     private String description;
-    private int[] skillRequirements;
+    private String start;
+    private QuestRequirements requirements;
     private QuestReward rewards;
+    private Steps steps;
 
-    public Quest(int questID, String name, String description, int[] skillRequirements, QuestReward rewards) {
+    public Quest(int questID, String name, String description, String start, QuestRequirements QuestRequirements,
+            QuestReward rewards, Steps steps) {
         this.questID = questID;
         this.name = name;
         this.description = description;
-        this.skillRequirements = skillRequirements;
+        this.start = start;
+        this.requirements = QuestRequirements;
         this.rewards = rewards;
+        this.steps = steps;
+    }
+
+    public Steps getSteps() {
+        return steps;
+    }
+
+    public void setSteps(Steps steps) {
+        this.steps = steps;
     }
 
     public int getQuestID() {
@@ -39,12 +52,8 @@ public class Quest {
         this.description = description;
     }
 
-    public int[] getSkillRequirements() {
-        return skillRequirements;
-    }
-
-    public void setSkillRequirements(int[] skillRequirements) {
-        this.skillRequirements = skillRequirements;
+    public QuestRequirements getRequirements() {
+        return requirements;
     }
 
     public QuestReward getRewards() {
@@ -53,6 +62,18 @@ public class Quest {
 
     public void setRewards(QuestReward rewards) {
         this.rewards = rewards;
+    }
+
+    public void setRequirements(QuestRequirements requirements) {
+        this.requirements = requirements;
+    }
+
+    public String getStart() {
+        return start;
+    }
+
+    public void setStart(String start) {
+        this.start = start;
     }
 
 }

@@ -9,7 +9,7 @@ import com.g8e.gameserver.models.Quest.Quest;
 import com.google.gson.Gson;
 
 public class QuestsManager {
-    private Quest[] quests = new Quest[5];
+    private Quest[] quests = new Quest[3];
 
     public QuestsManager() {
         loadQuests();
