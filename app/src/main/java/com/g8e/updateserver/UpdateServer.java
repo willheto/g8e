@@ -76,6 +76,7 @@ public class UpdateServer extends WebSocketServer {
     @Override
     public void onError(WebSocket conn, Exception ex) {
         Logger.printError("An error occurred: " + ex.getMessage());
+        ex.printStackTrace(); // This will print the full stack trace
     }
 
     @Override
