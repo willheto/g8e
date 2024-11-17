@@ -1,6 +1,7 @@
 package com.g8e.updateserver;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
@@ -11,30 +12,46 @@ public class AssetLoader {
 
     public List<Asset> getAssets(String directoryPath) throws IOException, URISyntaxException {
         List<Asset> assets = new ArrayList<>();
-
-        // Load the resource URL
-        URL resourceUrl = getClass().getResource(directoryPath);
+        URL resourceUrl = this.getClass().getResource(directoryPath);
         if (resourceUrl == null) {
             throw new IllegalArgumentException("Resource not found: " + directoryPath);
         }
 
-        // Use toURI to get a valid URI
-        Path path = Paths.get(resourceUrl.toURI());
-
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-            for (Path entry : stream) {
-                if (Files.isDirectory(entry)) {
-                    // Pass the relative path of the subdirectory correctly
-                    List<Asset> subAssets = getAssets("/data/" + entry.getFileName().toString());
-                    assets.add(new Asset(entry.getFileName().toString(), "directory", subAssets));
-                } else {
-                    // Read file data
-                    byte[] data = Files.readAllBytes(entry);
-                    assets.add(new Asset(entry.getFileName().toString(), "file", data));
+        // Check if the resource is inside a JAR file
+        if ("jar".equals(resourceUrl.getProtocol())) {
+            // Resource is inside a JAR file, handle it with JarFile or ZipFileSystem
+            String jarPath = resourceUrl.getPath().substring(5, resourceUrl.getPath().indexOf("!"));
+            Path jarFilePath = Paths.get(new URI(jarPath));
+            // Extract and read from JAR
+            try (FileSystem fs = FileSystems.newFileSystem(jarFilePath, getClass().getClassLoader())) {
+                Path path = fs.getPath(directoryPath);
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                    for (Path entry : stream) {
+                        if (Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
+                            List<Asset> subAssets = this.getAssets("/data/" + entry.getFileName().toString());
+                            assets.add(new Asset(entry.getFileName().toString(), "directory", subAssets));
+                        } else {
+                            byte[] data = Files.readAllBytes(entry);
+                            assets.add(new Asset(entry.getFileName().toString(), "file", data));
+                        }
+                    }
+                }
+            }
+        } else {
+            // Resource is on the filesystem
+            Path path = Paths.get(resourceUrl.toURI());
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                for (Path entry : stream) {
+                    if (Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)) {
+                        List<Asset> subAssets = this.getAssets("/data/" + entry.getFileName().toString());
+                        assets.add(new Asset(entry.getFileName().toString(), "directory", subAssets));
+                    } else {
+                        byte[] data = Files.readAllBytes(entry);
+                        assets.add(new Asset(entry.getFileName().toString(), "file", data));
+                    }
                 }
             }
         }
-
         return assets;
     }
 
