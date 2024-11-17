@@ -3,8 +3,8 @@
     "questID": 0,
     "mapProperty": "DUKES_QUEST",
     "name": "Duke's Quest",
-    "description": "Duke Eldric has lost his intel report, and needs someone to get it back.",
-    "start": "Speak to Duke Eldric in Stonehaven.",
+    "description": "Duke has lost his intel report, and needs someone to get it back.",
+    "start": "Speak to Duke in Stonehaven.",
     "requirements": {
       "skillRequirements": [],
       "influenceRequirement": 0,
@@ -38,10 +38,19 @@
     },
     "steps": {
       "1": {
-        "description": "The priest told me his acolyte hasn't returned. Apparently he was heading west, to the village of Eldoria"
+        "description": "The priest told me his acolyte hasn't returned. Apparently he was heading south-west, to the village of Eldoria"
       },
       "2": {
-        "description": "City of Eldoria seems to be closed off. I need to find another way in."
+        "description": "I must let the priest know what happened to his acolyte."
+      },
+      "3": {
+        "description": "You promised do something about the bandit. I wonder what?"
+      },
+      "4": {
+        "description": "I killed the bandit. He didn't have the message though. Maybe I should check with the other bandits."
+      },
+      "5": {
+        "description": "I took care of the bandits. I should return to the acolyte."
       }
     }
   },

@@ -24,8 +24,13 @@ public class Npc extends Combatant {
     }
 
     public void update() {
+        this.updateCounters();
+
+        if (isDying) {
+            return;
+        }
+
         if (isDead) {
-            this.resetNpc();
             if (this.respawnTickCounter < this.respawnTime) {
                 this.respawnTickCounter++;
             } else {
@@ -37,26 +42,10 @@ public class Npc extends Combatant {
         if (this.targetedEntityID == null || this.isTargetTileNotWithinWanderArea()) {
 
             // 20% chance to set new target
-            if (Math.random() < 0.10) {
+            if (Math.random() < 0.05) {
                 this.setNewTargetTileWithingWanderArea();
             }
 
-        }
-
-        this.updateCounters();
-
-        if (this.targetedEntityID != null) {
-            if (isOneStepAwayFromTarget()) {
-                Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
-                if (entity != null && entity instanceof Combatant) {
-                    ((Combatant) this).attackEntity((Combatant) entity);
-                    this.nextTileDirection = null;
-                    this.targetTile = null;
-                    this.newTargetTile = null;
-                    this.targetEntityLastPosition = null;
-                    return;
-                }
-            }
         }
 
         if (this.targetedEntityID != null) {
@@ -68,6 +57,20 @@ public class Npc extends Combatant {
         } else {
             this.moveTowardsTarget();
 
+        }
+
+        if (this.targetedEntityID != null) {
+            if (isOneStepAwayFromTarget()) {
+                Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
+                if (entity != null && entity instanceof Combatant) {
+                    ((Combatant) this).attackEntity((Combatant) entity);
+                    // this.nextTileDirection = null;
+                    this.targetTile = null;
+                    this.newTargetTile = null;
+                    this.targetEntityLastPosition = null;
+                    return;
+                }
+            }
         }
     }
 
@@ -97,10 +100,47 @@ public class Npc extends Combatant {
             this.lastDamageDealt = null;
         }
 
-        if (this.hpBarCounter > 0) {
-            this.hpBarCounter--;
+        if (this.isInCombatCounter > 0) {
+            this.isInCombatCounter--;
         } else {
-            this.isHpBarShown = false;
+            this.isInCombat = false;
+        }
+
+        if (isDying) {
+            this.dyingCounter++;
+            if (this.dyingCounter > 5) {
+
+                EntityData entityData = this.world.entitiesManager.getEntityDataByIndex(this.entityIndex);
+
+                if (entityData.dropTable != null) {
+                    // select random item from drop table
+                    DropTable firstDrop = DropTable.getRolledDrop(entityData.dropTable);
+                    DropTable secondDrop = DropTable.getRolledDrop(entityData.dropTable);
+
+                    if (firstDrop != null) {
+                        if (firstDrop.getAmount() > 0) {
+                            this.world.itemsManager.spawnItemWithAmount(this.worldX, this.worldY, firstDrop.getItemID(),
+                                    200, firstDrop.getAmount());
+                        } else {
+                            this.world.itemsManager.spawnItem(this.worldX, this.worldY, firstDrop.getItemID(), 200);
+                        }
+                    }
+                    if (secondDrop != null) {
+                        if (secondDrop.getAmount() > 0) {
+                            this.world.itemsManager.spawnItemWithAmount(this.worldX, this.worldY,
+                                    secondDrop.getItemID(),
+                                    200, secondDrop.getAmount());
+                        } else {
+                            this.world.itemsManager.spawnItem(this.worldX, this.worldY, secondDrop.getItemID(), 200);
+                        }
+                    }
+                }
+
+                this.resetNpc();
+                this.isDying = false;
+                this.isDead = true;
+                this.dyingCounter = 0;
+            }
         }
 
     }

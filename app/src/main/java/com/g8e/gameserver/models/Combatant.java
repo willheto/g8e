@@ -1,8 +1,8 @@
 package com.g8e.gameserver.models;
 
 import com.g8e.gameserver.World;
+import com.g8e.gameserver.models.events.AttackEvent;
 import com.g8e.gameserver.util.CombatUtils;
-import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
 import com.g8e.util.Logger;
 
@@ -10,15 +10,24 @@ public abstract class Combatant extends Entity {
     public int[] skills = new int[4];
     public int currentHitpoints;
     public String targetedEntityID = null;
-    public boolean isHpBarShown;
+    public boolean isInCombat;
     public Integer lastDamageDealt = null;
 
     public int lastDamageDealtCounter;
     public int attackTickCounter;
-    public int hpBarCounter;
+    public int isInCombatCounter;
     public int combatLevel;
-    public Integer weapon = null;
     public String attackStyle;
+
+    public Integer weapon = null;
+    public Integer helmet = null;
+    public Integer shield = null;
+    public Integer bodyArmor = null;
+    public Integer legArmor = null;
+    public Integer gloves = null;
+    public Integer boots = null;
+    public Integer neckwear = null;
+    public Integer ring = null;
 
     public Combatant(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
             int type) {
@@ -35,6 +44,10 @@ public abstract class Combatant extends Entity {
             return;
         }
 
+        if (entity.isDying) {
+            return;
+        }
+
         Wieldable weapon = null;
         if (this instanceof Player && this.weapon != null) {
             weapon = this.world.itemsManager.getWieldableInfoByItemID(((Player) this).inventory[this.weapon]);
@@ -43,38 +56,35 @@ public abstract class Combatant extends Entity {
         this.attackTickCounter = weapon != null ? weapon.getAttackSpeed() : 4;
 
         int accuracyBonus = weapon != null ? weapon.getAccuracyBonus() : 0;
-        int attackChance = CombatUtils.calculateHitChance(
-                ExperienceUtils.getLevelByExp(this.skills[SkillUtils.ATTACK]),
-                ExperienceUtils.getLevelByExp(entity.skills[SkillUtils.DEFENCE]), accuracyBonus, 0);
+        int strengthBonus = weapon != null ? weapon.getStrengthBonus() : 0;
+        int attackDamage = CombatUtils.getAttackDamage(this.skills[SkillUtils.ATTACK], this.skills[SkillUtils.STRENGTH],
+                entity.skills[SkillUtils.DEFENCE],
+                accuracyBonus,
+                strengthBonus,
+                0);
 
-        int attackBonus = weapon != null ? weapon.getAttackBonus() : 0;
-        int attackDamage = CombatUtils.getAttackDamage(this.skills[SkillUtils.STRENGTH],
-                attackBonus);
+        entity.currentHitpoints -= attackDamage;
+        if (entity.currentHitpoints < 0) {
+            entity.currentHitpoints = 0;
+        }
+        int multiplier = 1;
 
-        boolean isDamageDealt = Math.random() * 100 < attackChance;
-
-        if (isDamageDealt) {
-            entity.currentHitpoints -= attackDamage;
-            int multiplier = 5;
-
-            if (this instanceof Player) {
-
-                if (this.attackStyle.equals("attack")) {
-                    ((Player) this).addXp(SkillUtils.ATTACK, (4 * attackDamage) * multiplier);
-                } else if (this.attackStyle.equals("strength")) {
-                    ((Player) this).addXp(SkillUtils.STRENGTH, (4 * attackDamage) * multiplier);
-                } else if (this.attackStyle.equals("defence")) {
-                    ((Player) this).addXp(SkillUtils.DEFENCE, (4 * attackDamage) * multiplier);
-                }
-                ((Player) this).addXp(SkillUtils.HITPOINTS, (1 * attackDamage) * multiplier);
-
+        if (this instanceof Player) {
+            if (this.attackStyle.equals("attack")) {
+                ((Player) this).addXp(SkillUtils.ATTACK, (4 * attackDamage) * multiplier);
+            } else if (this.attackStyle.equals("strength")) {
+                ((Player) this).addXp(SkillUtils.STRENGTH, (4 * attackDamage) * multiplier);
+            } else if (this.attackStyle.equals("defence")) {
+                ((Player) this).addXp(SkillUtils.DEFENCE, (4 * attackDamage) * multiplier);
             }
+            ((Player) this).addXp(SkillUtils.HITPOINTS, (1 * attackDamage) * multiplier);
+
         }
 
-        entity.lastDamageDealt = isDamageDealt ? attackDamage : 0;
+        entity.lastDamageDealt = attackDamage;
         entity.lastDamageDealtCounter = 3;
-        entity.hpBarCounter = 10;
-        entity.isHpBarShown = true;
+        entity.isInCombatCounter = 20;
+        entity.isInCombat = true;
 
         AttackEvent attackEvent = new AttackEvent(this.entityID,
                 entity.entityID);
@@ -83,23 +93,13 @@ public abstract class Combatant extends Entity {
         if (entity.currentHitpoints <= 0) {
             this.clearTarget();
             if (entity instanceof Npc) {
-                ((Npc) entity).isDead = true;
+                ((Npc) entity).isDying = true;
+                ((Npc) entity).nextTileDirection = null;
+                ((Player) this).runQuestScriptsForKill(entity.entityIndex);
 
-                EntityData entityData = this.world.entitiesManager.getEntityDataByIndex(entity.entityIndex);
-
-                if (entityData.dropTable != null) {
-                    for (int i = 0; i < entityData.dropTable.length; i++) {
-                        int itemID = entityData.dropTable[i].getItemID();
-
-                        // Roll for drop
-                        if (Math.random() < entityData.dropTable[i].getDropChance()) {
-                            this.world.itemsManager.spawnItem(entity.worldX, entity.worldY, itemID);
-                        }
-
-                    }
-                }
             } else if (entity instanceof Player) {
                 ((Player) entity).killPlayer();
+
             }
 
         }

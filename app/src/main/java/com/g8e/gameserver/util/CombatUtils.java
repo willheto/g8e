@@ -1,35 +1,40 @@
 package com.g8e.gameserver.util;
 
 public class CombatUtils {
-    public static int calculateHitChance(int attackLevel, int defenseLevel, int accuracyBonus, int defenseBonus) {
-        // Calculate an effective attack and defense score based on levels and bonuses
-        double effectiveAttack = attackLevel * (1 + accuracyBonus / 100.0);
-        double effectiveDefense = defenseLevel * (1 + defenseBonus / 100.0);
 
-        // Calculate base hit chance as a ratio of effective attack over total of both
-        double hitChance = (effectiveAttack / (effectiveAttack + effectiveDefense)) * 100;
-
-        // Constrain hit chance between 5% and 95%
-        if (hitChance < 5) {
-            hitChance = 5;
-        } else if (hitChance > 95) {
-            hitChance = 95;
-        }
-
-        return (int) hitChance;
-    }
-
-    // TODO FIX LOGIC
-    public static int getAttackDamage(int strengthExperience, int attackValue) {
+    public static int getAttackDamage(int attackExperience, int strengthExperience, int enemyDefenceExperience,
+            int accuracyBonus,
+            int attackValue,
+            int enemyDefenceBonus) {
         int strengthLevel = ExperienceUtils.getLevelByExp(strengthExperience);
 
-        int damage;
-        if (strengthLevel > 10) {
-            damage = 1 + (strengthLevel / 10) * (attackValue / 10);
+        int effectiveStrengthLevel = strengthLevel + 9;
+
+        int maximumHit = (effectiveStrengthLevel * (attackValue + 64) + 320) / 640;
+
+        int attackLevel = ExperienceUtils.getLevelByExp(attackExperience);
+        int effectiveAttackLevel = attackLevel + 9;
+        int attackRoll = (effectiveAttackLevel * (accuracyBonus + 64));
+
+        int enemyEffectiveDefenceLevel = ExperienceUtils.getLevelByExp(enemyDefenceExperience) + 9;
+        int defenceRoll = enemyEffectiveDefenceLevel * (enemyDefenceBonus + 64);
+
+        double hitChance;
+        if (attackRoll > defenceRoll) {
+            hitChance = 1 - ((defenceRoll + 2.0) / (2.0 * (attackRoll + 1)));
         } else {
-            damage = 1 + (strengthLevel / 4) * (attackValue / 10);
+            hitChance = attackRoll / (2.0 * (defenceRoll + 1.0));
         }
 
-        return damage;
+        boolean hit = Math.random() < hitChance;
+
+        if (!hit) {
+            return 0;
+        } else {
+            // random from 1 to maximum hit
+            return (int) (1 + Math.random() * (maximumHit - 1));
+
+        }
+
     }
 }

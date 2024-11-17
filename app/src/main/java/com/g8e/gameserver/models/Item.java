@@ -7,15 +7,42 @@ public class Item {
     private String examine;
     private boolean isWieldable;
     private String spriteName;
+    private int value;
+    private boolean isStackable;
+    private int amount;
     private Integer worldX = null;
     private Integer worldY = null;
 
-    public Item(int itemID, String name, String examine, boolean isWieldable, String spriteName) {
+    public Item(int itemID, String name, String examine, boolean isWieldable, boolean isStackable, String spriteName,
+            int Value) {
         this.itemID = itemID;
         this.name = name;
         this.examine = examine;
         this.isWieldable = isWieldable;
+        this.isStackable = isStackable;
         this.spriteName = spriteName;
+        this.value = Value;
+        this.amount = 1;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public int getAmount() {
+        return amount;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+    public boolean isStackable() {
+        return isStackable;
+    }
+
+    public void setStackable(boolean stackable) {
+        isStackable = stackable;
     }
 
     public int getItemID() {

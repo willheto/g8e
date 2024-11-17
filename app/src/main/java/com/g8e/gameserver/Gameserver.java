@@ -1,23 +1,16 @@
 package com.g8e.gameserver;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-
-import com.g8e.gameserver.network.GameState;
 import com.g8e.gameserver.network.WebSocketEventsHandler;
 import com.g8e.util.Logger;
-import com.google.gson.Gson;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
@@ -25,7 +18,7 @@ public class GameServer extends WebSocketServer {
     static Dotenv dotenv = Dotenv.load();
 
     private final WebSocketEventsHandler eventsHandler;
-    private final World world = new World(gameState -> broadcastGameState(gameState));
+    private final World world = new World();
 
     public GameServer() {
         super(new InetSocketAddress(Integer.parseInt(dotenv.get("GAME_SERVER_PORT"))));
@@ -67,7 +60,7 @@ public class GameServer extends WebSocketServer {
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         Logger.printInfo(conn + " has disconnected");
-        world.removePlayer(conn.toString());
+        world.removePlayer(conn);
     }
 
     @Override
@@ -79,27 +72,6 @@ public class GameServer extends WebSocketServer {
     public void onStart() {
         Logger.printInfo("Game server started on port: " + getPort());
 
-    }
-
-    public void broadcastGameState(GameState gameState) {
-
-        String gameStateJson = new Gson().toJson(gameState);
-        byte[] compressedData = compress(gameStateJson);
-        for (WebSocket conn : getConnections()) {
-            conn.send(compressedData);
-        }
-    }
-
-    public byte[] compress(String data) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_COMPRESSION))) {
-            dos.write(data.getBytes());
-            dos.close();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     private Map<String, String> getQueryParams(String resourceDescriptor) {

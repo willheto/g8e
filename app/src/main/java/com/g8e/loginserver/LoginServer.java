@@ -189,7 +189,12 @@ public class LoginServer extends WebSocketServer {
     }
 
     private void handleLogoutRequest(WebSocket conn) {
-        broadcast("Logout request received");
+        Logger.printInfo("Logout request received from " + conn);
+        try {
+            removePlayer(conn.toString());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void handleWorldResetRequest(WebSocket conn) {

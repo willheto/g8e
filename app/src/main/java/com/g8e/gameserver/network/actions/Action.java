@@ -1,8 +1,8 @@
 package com.g8e.gameserver.network.actions;
 
 public class Action {
-    String action;
-    String playerID;
+    protected String action;
+    protected String playerID;
 
     public String getAction() {
         return action;

@@ -3,9 +3,7 @@ package com.g8e.gameserver.tile;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-
 import javax.imageio.ImageIO;
-
 import com.g8e.gameserver.World;
 import java.awt.image.BufferedImage;
 
@@ -17,6 +15,7 @@ public class TileManager {
     public int[][] mapTileNumLayer2;
     public int[][] mapTileNumLayer3;
     public int[][] mapTileNumLayer4;
+    public int chunkSize = 10;
 
     public TileManager(World world) {
         this.world = world;
@@ -28,18 +27,84 @@ public class TileManager {
         mapTileNumLayer3 = new int[world.maxWorldCol][world.maxWorldRow];
         mapTileNumLayer4 = new int[world.maxWorldCol][world.maxWorldRow];
 
-        getTiles(); // Set all tiles with no collision
+        getTiles();
         loadMap("/data/map/worldmap_back_1.csv", 1); // Load layer 1 map
         loadMap("/data/map/worldmap_back_2.csv", 2); // Load layer 2 map
         loadMap("/data/map/worldmap_fore_1.csv", 3); // Load layer 3 map
-        loadMap("/data/map/worldmap_fore_2.csv", 4); // Load layer 3 map
+        loadMap("/data/map/worldmap_fore_2.csv", 4); // Load layer 4 map
 
     }
 
+    public TilePosition getClosestWalkableTile(int x, int y) {
+        try {
+            int distance = 0;
+
+            while (true) {
+                // Search in increasing distance from the target tile
+                for (int i = -distance; i <= distance; i++) {
+                    for (int j = -distance; j <= distance; j++) {
+                        // Only check the outermost tiles of the current square (Manhattan distance)
+                        if (i == -distance || i == distance || j == -distance || j == distance) {
+                            int newX = x + i;
+                            int newY = y + j;
+
+                            // Check bounds to avoid IndexOutOfBoundsException
+                            if (newX >= 0 && newX < world.maxWorldCol && newY >= 0 && newY < world.maxWorldRow) {
+                                if (!getCollisionByXandY(newX, newY)) {
+                                    return new TilePosition(newX, newY);
+                                }
+                            }
+                        }
+                    }
+                }
+                // If no walkable tile found, expand the search area by increasing the distance
+                distance++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // In case no walkable tile is found (very unlikely in a proper world setup)
+    }
+
+    public int getChunkByWorldXandY(int worldX, int worldY) {
+        try {
+            // world is divided into chunks of 10x10 tiles
+            // starting from top left corner of the world
+            int chunkX = worldX / chunkSize;
+            int chunkY = worldY / chunkSize;
+            return chunkX + chunkY * (world.maxWorldCol / chunkSize);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public int[] getNeighborChunks(int chunk) {
+        try {
+            int[] neighbors = new int[8];
+            int chunkX = chunk % (world.maxWorldCol / chunkSize);
+            int chunkY = chunk / (world.maxWorldCol / chunkSize);
+
+            neighbors[0] = chunkX - 1 + (chunkY - 1) * (world.maxWorldCol / chunkSize);
+            neighbors[1] = chunkX + (chunkY - 1) * (world.maxWorldCol / chunkSize);
+            neighbors[2] = chunkX + 1 + (chunkY - 1) * (world.maxWorldCol / chunkSize);
+            neighbors[3] = chunkX - 1 + chunkY * (world.maxWorldCol / chunkSize);
+            neighbors[4] = chunkX + 1 + chunkY * (world.maxWorldCol / chunkSize);
+            neighbors[5] = chunkX - 1 + (chunkY + 1) * (world.maxWorldCol / chunkSize);
+            neighbors[6] = chunkX + (chunkY + 1) * (world.maxWorldCol / chunkSize);
+            neighbors[7] = chunkX + 1 + (chunkY + 1) * (world.maxWorldCol / chunkSize);
+
+            return neighbors;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Is this even needed anymore?
     public Tile getTileByXandY(int x, int y) {
         try {
-            // For now, return the tile from Layer 1 (you could modify to return tiles from
-            // other layers)
+            // For now, return the tile from Layer 1
             int index = mapTileNumLayer1[x][y];
             return tile[index];
         } catch (Exception e) {

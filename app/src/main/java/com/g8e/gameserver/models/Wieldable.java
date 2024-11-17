@@ -1,18 +1,23 @@
 package com.g8e.gameserver.models;
 
+import com.g8e.util.Logger;
+
 public class Wieldable {
     int itemID;
     int accuracyBonus;
-    int attackBonus;
+    int strengthBonus;
     int defenceBonus;
     int attackSpeed;
+    String type;
 
-    public Wieldable(int itemID, int accuracyBonus, int attackBonus, int defenceBonus, int attackSpeed) {
+    public Wieldable(int itemID, int accuracyBonus, int strengthBonus, int defenceBonus, int attackSpeed, String type) {
         this.itemID = itemID;
         this.accuracyBonus = accuracyBonus;
-        this.attackBonus = attackBonus;
+        this.strengthBonus = strengthBonus;
         this.defenceBonus = defenceBonus;
         this.attackSpeed = attackSpeed;
+        this.type = type;
+        Logger.printError(type);
     }
 
     public int getItemID() {
@@ -23,8 +28,8 @@ public class Wieldable {
         return accuracyBonus;
     }
 
-    public int getAttackBonus() {
-        return attackBonus;
+    public int getStrengthBonus() {
+        return strengthBonus;
     }
 
     public int getDefenceBonus() {
@@ -33,5 +38,9 @@ public class Wieldable {
 
     public int getAttackSpeed() {
         return attackSpeed;
+    }
+
+    public String getType() {
+        return type;
     }
 }

@@ -3,7 +3,7 @@ package com.g8e.gameserver.pathfinding;
 import java.util.*;
 
 import com.g8e.gameserver.World;
-import com.g8e.util.Logger;
+import com.g8e.gameserver.tile.TilePosition;
 
 public class AStar {
 
@@ -21,8 +21,15 @@ public class AStar {
         PathNode targetPathNode = new PathNode(targetX, targetY, null);
 
         if (world.tileManager.getCollisionByXandY(targetX, targetY)) {
-            Logger.printDebug("Target tile is not walkable!");
-            return new ArrayList<>(); // Early exit if target is unreachable
+            // find closest walkable tile
+            TilePosition closestWalkableTile = world.tileManager.getClosestWalkableTile(targetX, targetY);
+
+            if (closestWalkableTile == null) {
+                return new ArrayList<>(); // Early exit if target is unreachable
+            }
+
+            targetPathNode = new PathNode(closestWalkableTile.x, closestWalkableTile.y, null);
+
         }
 
         openList.add(startPathNode);

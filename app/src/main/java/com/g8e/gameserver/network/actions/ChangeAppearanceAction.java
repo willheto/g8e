@@ -4,13 +4,15 @@ public class ChangeAppearanceAction extends Action {
     private int skinColor;
     private int hairColor;
     private int shirtColor;
+    private int pantsColor;
 
-    public ChangeAppearanceAction(String playerID, int skinColor, int hairColor, int shirtColor) {
+    public ChangeAppearanceAction(String playerID, int skinColor, int hairColor, int shirtColor, int pantsColor) {
         this.action = "changeAppearance";
         this.playerID = playerID;
         this.skinColor = skinColor;
         this.hairColor = hairColor;
         this.shirtColor = shirtColor;
+        this.pantsColor = pantsColor;
     }
 
     public int getSkinColor() {
@@ -25,4 +27,7 @@ public class ChangeAppearanceAction extends Action {
         return shirtColor;
     }
 
+    public int getPantsColor() {
+        return pantsColor;
+    }
 }

@@ -1,41 +1,49 @@
 package com.g8e.gameserver.network;
 
 import org.java_websocket.WebSocket;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.g8e.db.CommonQueries;
 import com.g8e.db.models.DBAccount;
 import com.g8e.gameserver.World;
 import com.g8e.db.models.DBPlayer;
-import com.g8e.gameserver.models.AttackEvent;
 import com.g8e.gameserver.models.ChatMessage;
-import com.g8e.gameserver.network.actions.ChatMessageAction;
-import com.g8e.gameserver.network.actions.DropItemAction;
-import com.g8e.gameserver.network.actions.EatItemAction;
+import com.g8e.gameserver.models.Chunkable;
 import com.g8e.gameserver.models.Player;
-import com.g8e.gameserver.models.TalkEvent;
+import com.g8e.gameserver.models.events.AttackEvent;
+import com.g8e.gameserver.models.events.TalkEvent;
+import com.g8e.gameserver.models.events.TradeEvent;
 import com.g8e.gameserver.network.actions.Action;
 import com.g8e.gameserver.network.actions.ChangeAppearanceAction;
-import com.g8e.gameserver.network.actions.ChangeAttackStyleAction;
-import com.g8e.gameserver.network.actions.PlayerAttackMove;
-import com.g8e.gameserver.network.actions.PlayerAttackMoveData;
-import com.g8e.gameserver.network.actions.PlayerMove;
-import com.g8e.gameserver.network.actions.PlayerMoveData;
-import com.g8e.gameserver.network.actions.PlayerTakeMoveAction;
-import com.g8e.gameserver.network.actions.PlayerTalkMoveAction;
-import com.g8e.gameserver.network.actions.QuestProgressUpdateAction;
-import com.g8e.gameserver.network.actions.RemoveItemFromInventoryAction;
-import com.g8e.gameserver.network.actions.UnwieldAction;
-import com.g8e.gameserver.network.actions.UseItemAction;
-import com.g8e.gameserver.network.actions.WieldItemAction;
+import com.g8e.gameserver.network.actions.attackStyle.ChangeAttackStyleAction;
+import com.g8e.gameserver.network.actions.chat.ChatMessageAction;
+import com.g8e.gameserver.network.actions.drop.DropItemAction;
+import com.g8e.gameserver.network.actions.edibles.EatItemAction;
+import com.g8e.gameserver.network.actions.inventory.AddItemToInventoryAction;
+import com.g8e.gameserver.network.actions.inventory.RemoveItemFromInventoryAction;
+import com.g8e.gameserver.network.actions.move.ForceNpcAttackPlayerAction;
+import com.g8e.gameserver.network.actions.move.PlayerAttackMove;
+import com.g8e.gameserver.network.actions.move.PlayerAttackMoveData;
+import com.g8e.gameserver.network.actions.move.PlayerMove;
+import com.g8e.gameserver.network.actions.move.PlayerMoveData;
+import com.g8e.gameserver.network.actions.move.PlayerTakeMoveAction;
+import com.g8e.gameserver.network.actions.move.PlayerTalkMoveAction;
+import com.g8e.gameserver.network.actions.quest.QuestProgressUpdateAction;
+import com.g8e.gameserver.network.actions.shop.BuyItemAction;
+import com.g8e.gameserver.network.actions.shop.SellItemAction;
+import com.g8e.gameserver.network.actions.shop.TradeMoveAction;
+import com.g8e.gameserver.network.actions.use.UseItemAction;
+import com.g8e.gameserver.network.actions.wield.UnwieldAction;
+import com.g8e.gameserver.network.actions.wield.WieldItemAction;
+import com.g8e.gameserver.network.compressing.Compress;
+import com.g8e.gameserver.network.dataTransferModels.DTONpc;
+import com.g8e.gameserver.network.dataTransferModels.DTOPlayer;
 import com.g8e.util.Logger;
 import com.google.gson.Gson;
 
@@ -45,18 +53,6 @@ public class WebSocketEventsHandler {
     public WebSocketEventsHandler(World world) {
         this.world = world;
 
-    }
-
-    public byte[] compress(String data) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                DeflaterOutputStream dos = new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_COMPRESSION))) {
-            dos.write(data.getBytes());
-            dos.close();
-            return baos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public void handleConnection(WebSocket conn, Map<String, String> queryParams) {
@@ -86,6 +82,8 @@ public class WebSocketEventsHandler {
                 return;
             }
 
+            world.addConnection(conn);
+
             String uniquePlayerID = conn.toString();
 
             Player playerToBeAdded = new Player(this.world, player, uniquePlayerID, account.getUsername(),
@@ -93,30 +91,30 @@ public class WebSocketEventsHandler {
 
             world.addPlayer(playerToBeAdded);
 
+            addDefaultChatMessages(playerToBeAdded.name);
+
+            int[] neighborChunks = this.world.tileManager.getNeighborChunks(playerToBeAdded.currentChunk);
+            List<DTONpc> npcsInCurrentAndNeighborChunks = getEntitiesInCurrentAndNeighborChunks(playerToBeAdded,
+                    this.world.npcs, neighborChunks)
+                    .stream().map(DTONpc::new).toList();
+            List<DTOPlayer> playersInCurrentAndNeighborChunks = getEntitiesInCurrentAndNeighborChunks(
+                    playerToBeAdded, this.world.players, neighborChunks)
+                    .stream().map(DTOPlayer::new).toList();
             List<AttackEvent> attackEvents = new ArrayList<>();
             List<TalkEvent> talkEvents = new ArrayList<>();
+            List<TradeEvent> tradeEvents = new ArrayList<>();
 
-            ChatMessage welcomeMessage = new ChatMessage(playerToBeAdded.name, "Welcome to the game!",
-                    System.currentTimeMillis(),
-                    false);
-
-            ChatMessage tutorialMessage = new ChatMessage(playerToBeAdded.name,
-                    "You can interact with the world using your mouse.", System.currentTimeMillis(), false);
-            ChatMessage tutorialMessage2 = new ChatMessage(playerToBeAdded.name,
-                    "Open stats menu and inventory by pressing TAB.",
-                    System.currentTimeMillis(), false);
-
-            world.addChatMessage(welcomeMessage);
-            world.addChatMessage(tutorialMessage);
-            world.addChatMessage(tutorialMessage2);
-
-            GameState gameState = new GameState(attackEvents, talkEvents, world.getPlayers(), world.getNpcs(),
+            GameState gameState = new GameState(attackEvents, talkEvents, tradeEvents,
+                    playersInCurrentAndNeighborChunks,
+                    npcsInCurrentAndNeighborChunks,
                     world.getChatMessages(),
                     world.getItems(),
-                    conn.toString());
+                    conn.toString(),
+                    world.getOnlinePlayers(),
+                    world.shopsManager.getShops());
 
             String gameStateJson = new Gson().toJson(gameState);
-            byte[] compressedData = compress(gameStateJson);
+            byte[] compressedData = Compress.compress(gameStateJson);
 
             conn.send(compressedData);
 
@@ -126,6 +124,30 @@ public class WebSocketEventsHandler {
         }
     }
 
+    private void addDefaultChatMessages(String name) {
+        ChatMessage welcomeMessage = new ChatMessage(name, "Welcome to the game!",
+                System.currentTimeMillis(),
+                false);
+
+        ChatMessage tutorialMessage = new ChatMessage(name,
+                "You can interact with the world using your mouse.", System.currentTimeMillis(), false);
+
+        world.addChatMessage(welcomeMessage);
+        world.addChatMessage(tutorialMessage);
+    }
+
+    private <T extends Chunkable> List<T> getEntitiesInCurrentAndNeighborChunks(Player player, List<T> entities,
+            int[] neighborChunks) {
+        Set<Integer> neighborChunkSet = Arrays.stream(neighborChunks).boxed().collect(Collectors.toSet());
+
+        return entities.stream()
+                .filter(e -> {
+                    return e.getCurrentChunk() == player.getCurrentChunk()
+                            || neighborChunkSet.contains(e.getCurrentChunk());
+                })
+                .collect(Collectors.toList());
+    }
+
     public void handleMessage(WebSocket conn, String message) {
         Gson gson = new Gson();
         Action parsedMessage = gson.fromJson(message, Action.class);
@@ -133,6 +155,10 @@ public class WebSocketEventsHandler {
         String playerID = parsedMessage.getPlayerID();
 
         switch (action) {
+            case "logOut":
+                this.world.removePlayer(conn);
+                conn.close();
+                break;
             case "ping":
                 conn.send("pong");
                 break;
@@ -211,31 +237,29 @@ public class WebSocketEventsHandler {
                         RemoveItemFromInventoryAction.class);
                 this.world.enqueueAction(removeItemFromInventoryAction);
                 break;
-            /*
-             * case "changeAttackStyle":
-             * String attackStyle = (String) parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "changeAttackStyle", attackStyle));
-             * break;
-             * 
-             * case "inventoryUpdate":
-             * int[] inventory = (int[]) parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "inventoryUpdate", inventory));
-             * break;
-             * case "unwieldItem":
-             * int combatEquipmentIndex = (int) parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "unwildItem", combatEquipmentIndex));
-             * break;
-             * 
-             * case "removeItemsFromInventory":
-             * int[] itemIndices = (int[]) parsedMessage.getData();
-             * this.world.enqueueAction(
-             * new Action(conn.toString(), "removeItemsFromInventory", itemIndices));
-             * break;
-             * 
-             */
+            case "addItemToInventory":
+                AddItemToInventoryAction addItemToInventoryAction = gson.fromJson(message,
+                        AddItemToInventoryAction.class);
+                this.world.enqueueAction(addItemToInventoryAction);
+                break;
+            case "forceNpcAttackPlayer":
+                ForceNpcAttackPlayerAction forceNpcAttackPlayer = gson.fromJson(message,
+                        ForceNpcAttackPlayerAction.class);
+                this.world.enqueueAction(forceNpcAttackPlayer);
+                break;
+            case "buyItem":
+                BuyItemAction buyItemAction = gson.fromJson(message, BuyItemAction.class);
+                this.world.enqueueAction(buyItemAction);
+                break;
+
+            case "sellItem":
+                SellItemAction sellItemAction = gson.fromJson(message, SellItemAction.class);
+                this.world.enqueueAction(sellItemAction);
+                break;
+            case "tradeMove":
+                TradeMoveAction tradeMoveAction = gson.fromJson(message, TradeMoveAction.class);
+                this.world.enqueueAction(tradeMoveAction);
+                break;
 
             default:
                 break;

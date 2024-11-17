@@ -107,22 +107,24 @@ public class RegisterServer {
 
     private void createPlayer(int accountID, HttpExchange exchange) throws IOException {
         String SQL_INSERT_PLAYER = "INSERT INTO players "
-                + "(account_id, skin_color, hair_color, shirt_color, world_x, world_y, weapon, inventory, "
+                + "(account_id, skin_color, hair_color, shirt_color, pants_color, world_x, world_y, weapon, inventory, inventoryAmounts, "
                 + "quest_progress, attack_experience, defence_experience, "
                 + "strength_experience, hitpoints_experience) "
-                + "VALUES (?, 0, 0, 0, 75, 25, null, ?, ?, 0, 0, 0, 1200)";
+                + "VALUES (?, 0, 0, 0, 0, 75, 25, null, ?, ?, ?, 0, 0, 0, 1200)";
 
         try (Connection connection = DatabaseConnection.createDatabaseConnection();
                 var statement = connection.prepareStatement(SQL_INSERT_PLAYER)) {
-            statement.setInt(1, accountID); // account_id
-            // int32 array of 0s length 28
+            statement.setInt(1, accountID);
             int[] inventory = new int[20];
+            int[] inventoryAmounts = new int[20];
             int[] questProgress = new int[5];
 
-            statement.setString(2, gson.toJson(inventory)); // inventory
-            statement.setString(3, gson.toJson(questProgress)); // quest_progress
+            inventory[0] = 102;
+            inventoryAmounts[0] = 150;
 
-            // Execute the insert
+            statement.setString(2, gson.toJson(inventory));
+            statement.setString(3, gson.toJson(inventoryAmounts));
+            statement.setString(4, gson.toJson(questProgress));
             statement.executeUpdate();
 
             sendResponse(exchange, 200, new RegistrationResponse(true));
@@ -139,7 +141,8 @@ public class RegisterServer {
 
         // Add CORS headers
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*"); // Allow all origins
-        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "POST, GET, OPTIONS"); // Allow specific                                                                             // methods
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "POST, GET, OPTIONS"); // Allow specific //
+                                                                                                 // methods
         exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type"); // Allow specific headers
         exchange.sendResponseHeaders(statusCode, jsonResponse.getBytes().length);
 

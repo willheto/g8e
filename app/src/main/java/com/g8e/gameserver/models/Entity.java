@@ -9,14 +9,14 @@ import com.g8e.gameserver.pathfinding.PathNode;
 import com.g8e.gameserver.tile.Tile;
 import com.g8e.gameserver.tile.TilePosition;
 
-public abstract class Entity {
+public abstract class Entity implements Chunkable {
     public String entityID;
     public int entityIndex;
     public transient World world;
     public transient AStar pathFinder;
 
-    public int originalWorldX;
-    public int originalWorldY;
+    public transient int originalWorldX;
+    public transient int originalWorldY;
     public int worldX;
     public int worldY;
 
@@ -34,10 +34,14 @@ public abstract class Entity {
     public String targetItemID = null;
     public Direction facingDirection = Direction.DOWN;
 
-    public int wanderAreaFromOriginalTile = 3;
+    public int wanderAreaFromOriginalTile = 5;
     public List<PathNode> currentPath;
     protected TilePosition targetEntityLastPosition;
-    protected Integer goalAction = null; // 1 talk, 2 attack
+    protected Integer goalAction = null; // 1 talk, 2 attack, 3 trade
+    public boolean isDying = false;
+    public int dyingCounter = 0;
+
+    public int currentChunk;
 
     public Entity(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
             int type) {
@@ -52,9 +56,15 @@ public abstract class Entity {
         this.type = type;
         this.entityIndex = entityIndex;
         this.pathFinder = new AStar(world);
+        updateChunk();
     }
 
     public abstract void update();
+
+    @Override
+    public int getCurrentChunk() {
+        return this.currentChunk;
+    }
 
     protected void setNewTargetTileWithingWanderArea() {
         TilePosition randomPosition = new TilePosition(
@@ -83,13 +93,6 @@ public abstract class Entity {
     }
 
     private TilePosition getPositionOneTileAwayFromTarget(TilePosition target) {
-        int deltaX = target.x - this.worldX;
-        int deltaY = target.y - this.worldY;
-
-        if (deltaX == 0 && deltaY == 0) {
-            return null;
-        }
-
         // Create an array of tile offsets around the target
         TilePosition[] tilesAroundTarget = new TilePosition[] {
                 new TilePosition(target.x, target.y - 1), // Up
@@ -112,6 +115,14 @@ public abstract class Entity {
                 if (distance < minDistance) {
                     minDistance = distance;
                     closestTile = tile;
+                }
+                if (distance == minDistance) {
+                    // might as well pick a random one if they are the same distance
+                    if (Math.random() > 0.5) {
+
+                        minDistance = distance;
+                        closestTile = tile;
+                    }
                 }
             }
         }
@@ -140,20 +151,39 @@ public abstract class Entity {
     }
 
     protected void moveTowardsTarget() {
+        if (this.nextTileDirection != null) {
+            // always move in the direction of the next tile
+            switch (this.nextTileDirection) {
+                case UP:
+                    this.facingDirection = Direction.UP;
+                    move(this.worldX, this.worldY - 1);
+                    break;
+                case DOWN:
+                    this.facingDirection = Direction.DOWN;
+                    move(this.worldX, this.worldY + 1);
+                    break;
+                case LEFT:
+                    this.facingDirection = Direction.LEFT;
+                    move(this.worldX - 1, this.worldY);
+                    break;
+                case RIGHT:
+                    this.facingDirection = Direction.RIGHT;
+                    move(this.worldX + 1, this.worldY);
+                    break;
+            }
+        }
         if (this instanceof Combatant && ((Combatant) this).targetedEntityID != null) {
             setAttackTargetTile();
         }
 
         TilePosition target = this.getTarget();
+
         if (target == null) {
             return;
         }
 
         if (this.newTargetTile != null) {
-            if (this.targetTile != null) {
-                this.worldX = this.currentPath.get(1).x;
-                this.worldY = this.currentPath.get(1).y;
-            }
+
             currentPath = this.pathFinder.findPath(this.worldX, this.worldY, target.x, target.y);
 
             if (currentPath.size() == 0) {
@@ -207,14 +237,10 @@ public abstract class Entity {
             moveAlongPath(nextStep, nextNextStep);
         }
 
-        if (this instanceof Player) {
-            ((Player) this).savePosition();
-        }
     }
 
     protected void moveAlongPath(PathNode nextStep, PathNode nextNextStep) {
-        this.worldX = nextStep.x;
-        this.worldY = nextStep.y;
+        /* move(nextStep.x, nextStep.y); */
 
         Direction nextTileDirection = this.getDirection(nextNextStep.x - nextStep.x, nextNextStep.y - nextStep.y);
         this.nextTileDirection = nextTileDirection;
@@ -224,10 +250,31 @@ public abstract class Entity {
     // Last step
     protected void moveAlongPath(PathNode nextStep) {
         this.nextTileDirection = null;
-        this.worldX = nextStep.x;
-        this.worldY = nextStep.y;
+        /* move(nextStep.x, nextStep.y); */
         this.targetTile = null;
         currentPath = null;
+    }
+
+    // Always use move instead of explicitly setting worldX and worldY
+    // This will ensure that the chunk is updated correctly
+    protected void move(int worldX, int worldY) {
+        this.worldX = worldX;
+        this.worldY = worldY;
+        if (this instanceof Player) {
+            ((Player) this).savePosition();
+        }
+        updateChunk();
+    }
+
+    private void updateChunk() {
+        int chunk = this.world.tileManager.getChunkByWorldXandY(this.worldX, this.worldY);
+        if (this.currentChunk != chunk) {
+            this.currentChunk = chunk;
+
+            if (this instanceof Player) {
+                ((Player) this).needsFullChunkUpdate = true;
+            }
+        }
     }
 
     protected Direction getDirection(int deltaX, int deltaY) {
