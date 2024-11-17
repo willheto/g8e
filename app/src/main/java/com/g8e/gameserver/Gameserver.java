@@ -65,7 +65,12 @@ public class GameServer extends WebSocketServer {
 
     @Override
     public void onError(WebSocket conn, Exception ex) {
-        System.err.println("Error occurred on connection " + conn.getRemoteSocketAddress() + ":" + ex);
+        if (conn != null) {
+            System.out.println("Error from: " + conn.getRemoteSocketAddress());
+        } else {
+            System.out.println("Error occurred, but connection is null.");
+        }
+        ex.printStackTrace();
     }
 
     @Override
