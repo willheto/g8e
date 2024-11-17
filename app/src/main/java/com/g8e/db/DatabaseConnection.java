@@ -11,6 +11,10 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class DatabaseConnection {
     public static Connection createDatabaseConnection() throws SQLException {
         Dotenv dotenv = Dotenv.load();
+        Logger.printInfo("Connecting to the database");
+        Logger.printInfo(dotenv.get("DB_URL"));
+        Logger.printInfo(dotenv.get("DB_USERNAME"));
+        Logger.printInfo(dotenv.get("DB_PASSWORD"));
 
         try {
             return DriverManager.getConnection(
