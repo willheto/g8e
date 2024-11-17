@@ -7,6 +7,7 @@ import java.net.URL;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 public class AssetLoader {
@@ -26,7 +27,7 @@ public class AssetLoader {
         // Check if the URI is pointing to a JAR file
         if (uri.getScheme().equals("jar")) {
             // URI inside a JAR file, need to handle it differently
-            try (FileSystem fs = FileSystems.newFileSystem(uri, (Map<String, ?>) getClass().getClassLoader())) {
+            try (FileSystem fs = FileSystems.newFileSystem(uri, new HashMap<String, Object>())) {
                 Path path = fs.getPath(directoryPath);
 
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
