@@ -12,6 +12,8 @@ import java.util.Map;
 
 public class AssetLoader {
 
+    private static FileSystem fs = null; // Store the FileSystem to avoid reopening it
+
     public List<Asset> getAssets(String directoryPath) throws IOException, URISyntaxException {
         List<Asset> assets = new ArrayList<>();
 
@@ -26,21 +28,23 @@ public class AssetLoader {
 
         // Check if the URI is pointing to a JAR file
         if (uri.getScheme().equals("jar")) {
-            // URI inside a JAR file, need to handle it differently
-            try (FileSystem fs = FileSystems.newFileSystem(uri, new HashMap<String, Object>())) {
-                Path path = fs.getPath(directoryPath);
+            // If the file system is not already opened, open it
+            if (fs == null) {
+                fs = FileSystems.newFileSystem(uri, new HashMap<String, Object>());
+            }
 
-                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-                    for (Path entry : stream) {
-                        if (Files.isDirectory(entry)) {
-                            // Recursively load assets from subdirectories inside the JAR
-                            List<Asset> subAssets = getAssets("/data/" + entry.getFileName().toString());
-                            assets.add(new Asset(entry.getFileName().toString(), "directory", subAssets));
-                        } else {
-                            // Read file data
-                            byte[] data = Files.readAllBytes(entry);
-                            assets.add(new Asset(entry.getFileName().toString(), "file", data));
-                        }
+            Path path = fs.getPath(directoryPath);
+
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                for (Path entry : stream) {
+                    if (Files.isDirectory(entry)) {
+                        // Recursively load assets from subdirectories inside the JAR
+                        List<Asset> subAssets = getAssets("/data/" + entry.getFileName().toString());
+                        assets.add(new Asset(entry.getFileName().toString(), "directory", subAssets));
+                    } else {
+                        // Read file data
+                        byte[] data = Files.readAllBytes(entry);
+                        assets.add(new Asset(entry.getFileName().toString(), "file", data));
                     }
                 }
             }
@@ -82,5 +86,4 @@ public class AssetLoader {
                     + (data instanceof byte[] ? "[byte array]" : data) + '}';
         }
     }
-
 }
