@@ -7,6 +7,7 @@ import java.net.URL;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AssetLoader {
 
@@ -21,9 +22,12 @@ public class AssetLoader {
         if ("jar".equals(resourceUrl.getProtocol())) {
             // Resource is inside a JAR file, handle it with JarFile or ZipFileSystem
             String jarPath = resourceUrl.getPath().substring(5, resourceUrl.getPath().indexOf("!"));
-            Path jarFilePath = Paths.get(new URI(jarPath));
-            // Extract and read from JAR
-            try (FileSystem fs = FileSystems.newFileSystem(jarFilePath, getClass().getClassLoader())) {
+
+            // Fix for the issue: Ensure URI is correct and use FileSystems to access the
+            // JAR
+            Path jarFilePath = Paths.get(new URI("jar:file:" + jarPath)); // Ensure the "jar:file:" prefix is included
+
+            try (FileSystem fs = FileSystems.newFileSystem(jarFilePath, (Map<String, ?>) null)) {
                 Path path = fs.getPath(directoryPath);
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
                     for (Path entry : stream) {
