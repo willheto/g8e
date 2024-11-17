@@ -19,6 +19,13 @@ repositories {
     mavenCentral()
 }
 
+processResources {
+    from('.') {
+        include '.env'
+    }
+}
+
+
 dependencies {
     // Use JUnit test framework.
     testImplementation libs.junit
