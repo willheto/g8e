@@ -58,7 +58,7 @@ public class UpdateServer extends WebSocketServer {
             UpdateResponse response = new UpdateResponse(UpdateConstants.UPDATE_RESPONSE_UPDATE_AVAILABLE,
                     UpdateConstants.CACHE_VERSION, assets);
             conn.send(gson.toJson(response));
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException e) {
             Logger.printError("Failed to pack assets: " + e.getMessage());
         }
     }
