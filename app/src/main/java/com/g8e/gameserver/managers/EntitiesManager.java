@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-import com.g8e.gameserver.models.EntityData;
+import com.g8e.gameserver.models.entities.EntityData;
 import com.google.gson.Gson;
 
 public class EntitiesManager {

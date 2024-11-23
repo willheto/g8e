@@ -15,7 +15,7 @@ import com.g8e.gameserver.World;
 import com.g8e.db.models.DBPlayer;
 import com.g8e.gameserver.models.ChatMessage;
 import com.g8e.gameserver.models.Chunkable;
-import com.g8e.gameserver.models.Player;
+import com.g8e.gameserver.models.entities.Player;
 import com.g8e.gameserver.models.events.AttackEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
 import com.g8e.gameserver.models.events.TradeEvent;

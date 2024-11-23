@@ -15,7 +15,7 @@ public class TileManager {
     public int[][] mapTileNumLayer2;
     public int[][] mapTileNumLayer3;
     public int[][] mapTileNumLayer4;
-    public int chunkSize = 10;
+    public int chunkSize = 50;
 
     public TileManager(World world) {
         this.world = world;

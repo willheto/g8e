@@ -349,7 +349,7 @@
 
     "type": 2,
     "spriteName": "newman",
-    "isTalkable": false,
+    "isTalkable":  true,
     "palette": [0, 10, 20, 25],
     "dropTable": []
   },
@@ -359,6 +359,18 @@
     "examine": "Just a humble man with a humble mission.",
     "respawnTime": 200,
     "skills": [50, 100, 30, 300],
+    "type": 2,
+    "spriteName": "newman",
+    "isTalkable": true,
+    "palette": [0, 10, 20, 25],
+    "dropTable": []
+  },
+  {
+    "entityIndex": 20,
+    "name": "Esko Pasanen",
+    "examine": "Is he alive or dead? Or something else?",
+    "respawnTime": 200,
+    "skills": [5000, 5000, 5000, 10000],
     "type": 2,
     "spriteName": "newman",
     "isTalkable": false,

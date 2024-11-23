@@ -4,7 +4,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 
 import com.g8e.gameserver.enums.Direction;
 import com.g8e.gameserver.models.Chunkable;
-import com.g8e.gameserver.models.Npc;
+import com.g8e.gameserver.models.entities.Npc;
 
 public class DTONpc implements Chunkable {
     // Npc fields
@@ -18,6 +18,7 @@ public class DTONpc implements Chunkable {
     public Integer weapon = null;
     public String attackStyle;
     public boolean isDying = false;
+    public Integer lastDamageDealt = null;
 
     // Entity fields
     public String entityID;
@@ -42,6 +43,7 @@ public class DTONpc implements Chunkable {
         this.weapon = npc.weapon;
         this.attackStyle = npc.attackStyle;
         this.isDying = npc.isDying;
+        this.lastDamageDealt = npc.lastDamageDealt;
 
         this.entityID = npc.entityID;
         this.entityIndex = npc.entityIndex;

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 
+import com.g8e.gameserver.constants.NpcConstants;
 import com.g8e.gameserver.managers.EntitiesManager;
 import com.g8e.gameserver.managers.ItemsManager;
 import com.g8e.gameserver.managers.QuestsManager;
@@ -23,27 +24,26 @@ import com.g8e.gameserver.network.compressing.Compress;
 import com.g8e.gameserver.network.dataTransferModels.DTONpc;
 import com.g8e.gameserver.network.dataTransferModels.DTOPlayer;
 import com.g8e.gameserver.tile.TileManager;
-import com.g8e.gameserver.tile.TilePosition;
 import com.g8e.util.Logger;
 import com.google.gson.Gson;
 import com.g8e.gameserver.models.ChatMessage;
 import com.g8e.gameserver.models.Chunkable;
-import com.g8e.gameserver.models.Entity;
-import com.g8e.gameserver.models.EntityData;
-import com.g8e.gameserver.models.Item;
-import com.g8e.gameserver.models.Npc;
-import com.g8e.gameserver.models.Player;
+import com.g8e.gameserver.models.entities.Entity;
+import com.g8e.gameserver.models.entities.EntityData;
+import com.g8e.gameserver.models.entities.Npc;
+import com.g8e.gameserver.models.entities.Player;
 import com.g8e.gameserver.models.events.AttackEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
+import com.g8e.gameserver.models.objects.Item;
 import com.g8e.gameserver.network.GameState;
 import com.g8e.gameserver.network.GameStateComparator;
 import com.g8e.gameserver.network.WebSocketEventsHandler;
 
 public class World {
     private static final int TICK_RATE = 600; // 600ms
-    public final int maxWorldCol = 500;
-    public final int maxWorldRow = 500;
+    public final int maxWorldCol = 300;
+    public final int maxWorldRow = 300;
     public final int maxPlayers = 1000;
 
     public WebSocketEventsHandler webSocketEventsHandler;
@@ -307,188 +307,56 @@ public class World {
     }
 
     private void setInitialNpcs() {
+        addNpc(NpcConstants.GOBLIN, 82, 59, 7);
+        addNpc(NpcConstants.GOBLIN, 78, 52, 7);
+        addNpc(NpcConstants.GOBLIN, 84, 58, 10);
+        addNpc(NpcConstants.GOBLIN, 80, 67, 10);
+        addNpc(NpcConstants.GOBLIN, 73, 65, 10);
+        addNpc(NpcConstants.DUKE, 71, 23, 10);
+        addNpc(NpcConstants.SHOPKEEPER, 69, 21, 2);
 
-        EntityData entityData = entitiesManager.getEntityDataByIndex(1);
+        addNpc(NpcConstants.MAN, 77, 25, 7);
+        addNpc(NpcConstants.MAN2, 64, 33, 7);
+        addNpc(NpcConstants.MAN3, 77, 31, 7);
 
-        Npc goblin = new Npc(this, 1, 82, 59, entityData.getName(),
-                entityData.getExamine(),
-                entityData.getRespawnTime(),
-                entityData.getSkills(), entityData.getType());
+        addNpc(NpcConstants.PRIEST, 81, 37, 4);
+        addNpc(NpcConstants.GUARD, 43, 32, 4);
+        addNpc(NpcConstants.BAT, 56, 56, 8);
 
-        Npc goblin2 = new Npc(this, 1, 78, 52, entityData.getName(),
-                entityData.getExamine(),
-                entityData.getRespawnTime(),
-                entityData.getSkills(), entityData.getType());
+        addNpc(NpcConstants.CHICKEN, 79, 19, 5);
+        addNpc(NpcConstants.CHICKEN, 84, 20, 5);
+        addNpc(NpcConstants.CHICKEN, 82, 13, 4);
+        addNpc(NpcConstants.CHICKEN, 87, 15, 4);
 
-        Npc goblin3 = new Npc(this, 1, 84, 58, entityData.getName(),
-                entityData.getExamine(),
-                entityData.getRespawnTime(),
-                entityData.getSkills(), entityData.getType());
+        addNpc(NpcConstants.ACOLYTE, 50, 60, 3);
+        addNpc(NpcConstants.BANDIT, 131, 86, 4);
+        addNpc(NpcConstants.BANDIT, 133, 85, 4);
+        addNpc(NpcConstants.BANDIT, 131, 84, 5);
+        addNpc(NpcConstants.BANDIT_CHIEF, 132, 87, 5);
 
-        Npc goblin4 = new Npc(this, 1, 80, 67, entityData.getName(),
-                entityData.getExamine(),
-                entityData.getRespawnTime(),
-                entityData.getSkills(), entityData.getType());
+        addNpc(NpcConstants.BLACKSMITH_PASANEN, 200, 108, 2);
 
-        Npc goblin5 = new Npc(this, 1, 73, 65, entityData.getName(),
-                entityData.getExamine(),
-                entityData.getRespawnTime(),
-                entityData.getSkills(), entityData.getType());
-        this.npcs.add(goblin);
-        this.npcs.add(goblin2);
-        this.npcs.add(goblin3);
-        this.npcs.add(goblin4);
-        this.npcs.add(goblin5);
-
-        EntityData dukeData = entitiesManager.getEntityDataByIndex(2);
-
-        Npc duke = new Npc(this, 2, 71, 23, dukeData.getName(),
-                dukeData.getExamine(), dukeData.getRespawnTime(),
-                dukeData.getSkills(), dukeData.getType());
-        this.npcs.add(duke);
-
-        EntityData pasanen = entitiesManager.getEntityDataByIndex(14);
-        Npc pasanenNpc = new Npc(this, 14, 71, 23, pasanen.getName(),
-                pasanen.getExamine(), pasanen.getRespawnTime(),
-                pasanen.getSkills(), pasanen.getType());
-        this.npcs.add(pasanenNpc);
-
-        // Stonehaven men
-        TilePosition[] positions = { new TilePosition(77, 25), new TilePosition(64,
-                33), new TilePosition(77, 31),
-        };
-        EntityData manData1 = entitiesManager.getEntityDataByIndex(3);
-        EntityData manData2 = entitiesManager.getEntityDataByIndex(4);
-        EntityData manData3 = entitiesManager.getEntityDataByIndex(5);
-
-        Npc man1 = new Npc(this, 3, positions[0].x, positions[0].y,
-                manData1.getName(), manData1.getExamine(),
-                manData1.getRespawnTime(), manData1.getSkills(), manData1.getType());
-
-        Npc man2 = new Npc(this, 4, positions[1].x, positions[1].y,
-                manData2.getName(), manData2.getExamine(),
-                manData2.getRespawnTime(), manData2.getSkills(), manData2.getType());
-
-        Npc man3 = new Npc(this, 5, positions[2].x, positions[2].y,
-                manData3.getName(), manData3.getExamine(),
-                manData3.getRespawnTime(), manData3.getSkills(), manData3.getType());
-
-        this.npcs.add(man1);
-        this.npcs.add(man2);
-        this.npcs.add(man3);
-
-        EntityData priestData = entitiesManager.getEntityDataByIndex(6);
-
-        Npc priest = new Npc(this, 6, 81, 37, priestData.getName(),
-                priestData.getExamine(),
-                priestData.getRespawnTime(),
-                priestData.getSkills(), priestData.getType());
-        this.npcs.add(priest);
-
-        EntityData guardData = entitiesManager.getEntityDataByIndex(7);
-        Npc guard = new Npc(this, 7, 43, 32, guardData.getName(),
-                guardData.getExamine(), guardData.getRespawnTime(),
-                guardData.getSkills(), guardData.getType());
-
-        this.npcs.add(guard);
-
-        EntityData bat = entitiesManager.getEntityDataByIndex(8);
-        Npc bat1 = new Npc(this, 8, 56, 56, bat.getName(), bat.getExamine(),
-                bat.getRespawnTime(), bat.getSkills(),
-                bat.getType());
-
-        this.npcs.add(bat1);
-
-        EntityData chicken = entitiesManager.getEntityDataByIndex(10);
-        Npc chicken1 = new Npc(this, 10, 79, 19, chicken.getName(),
-                chicken.getExamine(), chicken.getRespawnTime(),
-                chicken.getSkills(), chicken.getType());
-
-        Npc chicken2 = new Npc(this, 10, 84, 20, chicken.getName(),
-                chicken.getExamine(), chicken.getRespawnTime(),
-                chicken.getSkills(), chicken.getType());
-
-        Npc chicken3 = new Npc(this, 10, 82, 13, chicken.getName(),
-                chicken.getExamine(), chicken.getRespawnTime(),
-                chicken.getSkills(), chicken.getType());
-
-        Npc chicken4 = new Npc(this, 10, 87, 15, chicken.getName(),
-                chicken.getExamine(), chicken.getRespawnTime(),
-                chicken.getSkills(), chicken.getType());
-
-        this.npcs.add(chicken1);
-
-        this.npcs.add(chicken2);
-
-        this.npcs.add(chicken3);
-
-        this.npcs.add(chicken4);
-
-        EntityData acolyte = entitiesManager.getEntityDataByIndex(11);
-        Npc acolyte1 = new Npc(this, 11, 50, 60, acolyte.getName(),
-                acolyte.getExamine(), acolyte.getRespawnTime(),
-                acolyte.getSkills(), acolyte.getType());
-        this.npcs.add(acolyte1);
-        EntityData bandit1 = entitiesManager.getEntityDataByIndex(12);
-        Npc bandit = new Npc(this, 12, 91, 79, bandit1.getName(),
-                bandit1.getExamine(), bandit1.getRespawnTime(),
-                bandit1.getSkills(), bandit1.getType());
-        this.npcs.add(bandit);
-        Npc bandit2 = new Npc(this, 12, 92, 79, bandit1.getName(),
-                bandit1.getExamine(), bandit1.getRespawnTime(),
-                bandit1.getSkills(), bandit1.getType());
-        this.npcs.add(bandit2);
-
-        Npc bandit3Npc = new Npc(this, 13, 93, 79, bandit1.getName(),
-                bandit1.getExamine(), bandit1.getRespawnTime(),
-                bandit1.getSkills(), bandit1.getType());
-        this.npcs.add(bandit3Npc);
-
-        EntityData banditChief = entitiesManager.getEntityDataByIndex(13);
-        Npc banditChiefNpc = new Npc(this, 13, 94, 79, banditChief.getName(),
-                banditChief.getExamine(), banditChief.getRespawnTime(),
-                banditChief.getSkills(), banditChief.getType());
-        this.npcs.add(banditChiefNpc);
-
-        EntityData blacksmithPasanen = entitiesManager.getEntityDataByIndex(17);
-
-        Npc blacksmithPasanenNpc = new Npc(this, 17, 121, 81, blacksmithPasanen.getName(),
-                blacksmithPasanen.getExamine(), blacksmithPasanen.getRespawnTime(),
-                blacksmithPasanen.getSkills(), blacksmithPasanen.getType());
-
-        this.npcs.add(blacksmithPasanenNpc);
-
-        for (int i = 0; i < 4; i++) {
-            EntityData entityData1 = entitiesManager.getEntityDataByIndex(19);
-            Npc npc = new Npc(this, 18, 124, 85, entityData1.getName(),
-                    entityData1.getExamine(), entityData1.getRespawnTime(),
-                    entityData1.getSkills(), entityData1.getType());
-            this.npcs.add(npc);
+        for (int i = 0; i < 2; i++) {
+            addNpc(NpcConstants.GUARD_PASANEN, 172, 95, 4);
         }
 
-        EntityData pasanenNpcData = entitiesManager.getEntityDataByIndex(20);
+        addNpc(NpcConstants.PASANEN, 194, 113, 7);
+        for (int i = 0; i < 4; i++) {
+            addNpc(NpcConstants.PASANEN, 189, 96, 8);
+        }
+        addNpc(NpcConstants.BARTENDER_PASANEN, 181, 105, 3);
+        addNpc(NpcConstants.MAYOR_PASANEN, 179, 88, 3);
+    }
 
-        Npc normalPasanen = new Npc(this, 20, 136, 83, pasanenNpcData.getName(),
-                pasanenNpcData.getExamine(), pasanenNpcData.getRespawnTime(),
-                pasanenNpcData.getSkills(), pasanenNpcData.getType());
-
-        this.npcs.add(normalPasanen);
-
-        EntityData bartenderPasanen = entitiesManager.getEntityDataByIndex(15);
-
-        Npc bartenderPasanenNpc = new Npc(this, 15, 120, 93, bartenderPasanen.getName(),
-                bartenderPasanen.getExamine(), bartenderPasanen.getRespawnTime(),
-                bartenderPasanen.getSkills(), bartenderPasanen.getType());
-
-        this.npcs.add(bartenderPasanenNpc);
-
-        EntityData mayorPasanen = entitiesManager.getEntityDataByIndex(16);
-
-        Npc mayorPasanenNpc = new Npc(this, 16, 125, 85, mayorPasanen.getName(),
-                mayorPasanen.getExamine(), mayorPasanen.getRespawnTime(),
-                mayorPasanen.getSkills(), mayorPasanen.getType());
-
-        this.npcs.add(mayorPasanenNpc);
+    private void addNpc(int index, int x, int y, int wanderRange) {
+        EntityData entityData = entitiesManager.getEntityDataByIndex(index);
+        Npc npc = new Npc(this, index, x, y, entityData.getName(),
+                entityData.getExamine(),
+                entityData.getRespawnTime(),
+                entityData.getSkills(),
+                entityData.getType());
+        this.npcs.add(npc);
+        npc.setWanderRange(wanderRange);
     }
 
     private void setInitialItems() {

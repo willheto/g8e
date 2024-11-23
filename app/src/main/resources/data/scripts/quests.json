@@ -56,9 +56,9 @@
   },
   {
     "questID": 2,
-    "mapProperty": "BANDIT_KING",
-    "name": "The Bandit King",
-    "description": "The Bandit King has been terrorizing the countryside for years. The king is offering a reward to anyone who can bring him to justice.",
+    "mapProperty": "UNDEAD_PASANEN",
+    "name": "The undead Pasanen",
+    "description": "Rumors speak of Esko Pasanen, a once-renowned warrior who succumbed to greed and madness, dooming his soul to eternal undeath. His crypt lies deep within the Forest, guarded by the cursed remnants of his fallen comrades. Pasanen's believe Esko Pasanen's spirit can be freed—but only by one brave enough to confront him. ",
     "requirements": {
       "skillRequirements": [],
       "influenceRequirement": 0,
@@ -68,6 +68,11 @@
       "skillRewards": [],
       "itemRewards": [101],
       "influenceReward": 1
+    },
+    "steps": {
+      "1": {
+        "description": "I spoke to the bartender about the undead Pasanen. I should gather more information."
+      }
     }
   }
 ]

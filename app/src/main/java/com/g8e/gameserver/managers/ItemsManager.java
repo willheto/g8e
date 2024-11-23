@@ -7,10 +7,10 @@ import java.net.URL;
 import com.g8e.util.Logger;
 
 import com.g8e.gameserver.World;
-import com.g8e.gameserver.models.DespawningItem;
-import com.g8e.gameserver.models.Edible;
-import com.g8e.gameserver.models.Item;
-import com.g8e.gameserver.models.Wieldable;
+import com.g8e.gameserver.models.objects.DespawningItem;
+import com.g8e.gameserver.models.objects.Edible;
+import com.g8e.gameserver.models.objects.Item;
+import com.g8e.gameserver.models.objects.Wieldable;
 import com.google.gson.Gson;
 
 public class ItemsManager {

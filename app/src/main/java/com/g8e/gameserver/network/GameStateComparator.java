@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Objects;
 
 import com.g8e.gameserver.models.ChatMessage;
-import com.g8e.gameserver.models.Item;
 import com.g8e.gameserver.models.events.AttackEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
+import com.g8e.gameserver.models.objects.Item;
 import com.g8e.gameserver.network.dataTransferModels.DTONpc;
 import com.g8e.gameserver.network.dataTransferModels.DTOPlayer;
 

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import com.g8e.gameserver.enums.Direction;
 import com.g8e.gameserver.models.Chunkable;
-import com.g8e.gameserver.models.Player;
+import com.g8e.gameserver.models.entities.Player;
 import com.g8e.gameserver.pathfinding.PathNode;
 
 public class DTOPlayer implements Chunkable {
@@ -37,6 +37,7 @@ public class DTOPlayer implements Chunkable {
 
     public String attackStyle;
     public boolean isDying = false;
+    public Integer lastDamageDealt = null;
 
     // Entity fields
     public String entityID;
@@ -76,6 +77,7 @@ public class DTOPlayer implements Chunkable {
         this.ring = player.ring;
         this.attackStyle = player.attackStyle;
         this.isDying = player.isDying;
+        this.lastDamageDealt = player.lastDamageDealt;
 
         this.entityID = player.entityID;
         this.entityIndex = player.entityIndex;

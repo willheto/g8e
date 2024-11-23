@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-import com.g8e.gameserver.models.Quest.Quest;
+import com.g8e.gameserver.models.quests.Quest;
 import com.google.gson.Gson;
 
 public class QuestsManager {
