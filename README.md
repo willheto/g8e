@@ -5,8 +5,7 @@
 
 ## About the project
 
-g8e is a hobby project to create a 2D game engine/server from scracth, without using any major external tools. Currently is serves as the server/game engine for my unnamed MMORPG. 
-The engine operates on a tick-based system, updating game state and processing events every 600 milliseconds (0.6 seconds). This approach ensures smooth gameplay and synchronized interactions between players
+Open-source MMORPG game-engine/server written from scratch. 600ms tick-based game loop, optimized to support up to 1000+ players online (on the same chunk!) at the same time. Supports serving game assets, models, textures and more from server side. Also includes update server, login server, and register server. Chunking strategy is implemented, and because of that and custom encoding of packets, game remains playable even on 56kbps connection.
 
 This reposiroty also includes register server, update server and login server.
 
