@@ -7,7 +7,7 @@ public class EntityData {
     String name = "";
     String examine = "";
     int respawnTime = 0;
-    int[] skills = new int[4];
+    int[] skills = new int[5];
     int type = 0;
     DropTable[] dropTable;
 

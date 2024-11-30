@@ -19,6 +19,7 @@ import com.g8e.gameserver.managers.EntitiesManager;
 import com.g8e.gameserver.managers.ItemsManager;
 import com.g8e.gameserver.managers.QuestsManager;
 import com.g8e.gameserver.managers.ShopsManager;
+import com.g8e.gameserver.managers.SpellsManager;
 import com.g8e.gameserver.network.actions.Action;
 import com.g8e.gameserver.network.compressing.Compress;
 import com.g8e.gameserver.network.dataTransferModels.DTONpc;
@@ -33,7 +34,9 @@ import com.g8e.gameserver.models.entities.EntityData;
 import com.g8e.gameserver.models.entities.Npc;
 import com.g8e.gameserver.models.entities.Player;
 import com.g8e.gameserver.models.events.AttackEvent;
+import com.g8e.gameserver.models.events.SoundEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
+import com.g8e.gameserver.models.events.MagicEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
 import com.g8e.gameserver.models.objects.Item;
 import com.g8e.gameserver.network.GameState;
@@ -52,6 +55,7 @@ public class World {
     public EntitiesManager entitiesManager = new EntitiesManager();
     public QuestsManager questsManager = new QuestsManager();
     public ShopsManager shopsManager = new ShopsManager();
+    public SpellsManager spellsManager = new SpellsManager();
     public List<Player> players = new ArrayList<Player>();
     public List<Npc> npcs = new ArrayList<Npc>();
     public List<Item> items = new ArrayList<Item>();
@@ -60,6 +64,8 @@ public class World {
     public List<AttackEvent> tickAttackEvents = new ArrayList<AttackEvent>();
     public List<TalkEvent> tickTalkEvents = new ArrayList<TalkEvent>();
     public List<TradeEvent> tickTradeEvents = new ArrayList<TradeEvent>();
+    public List<SoundEvent> tickSoundEvents = new ArrayList<SoundEvent>();
+    public List<MagicEvent> tickMagicEvents = new ArrayList<MagicEvent>();
 
     public GameState previousGameState;
     public WebSocket[] connections = new WebSocket[maxPlayers];
@@ -121,25 +127,31 @@ public class World {
     }
 
     private void gameTick() {
-        this.players.forEach(player -> {
+        try {
+            this.players.forEach(player -> {
+                List<Action> playerActions = this.actionQueue.stream()
+                        .filter(action -> action.getPlayerID().equals(player.entityID))
+                        .toList();
 
-            List<Action> playerActions = this.actionQueue.stream()
-                    .filter(action -> action.getPlayerID().equals(player.entityID)).toList();
+                player.setTickActions(playerActions);
+                player.update();
+            });
 
-            player.setTickActions(playerActions);
-            player.update();
+            // Remove actions after processing all players to avoid concurrent modification
+            // exception
+            List<Action> actionsToRemove = this.players.stream()
+                    .flatMap(player -> this.actionQueue.stream()
+                            .filter(action -> action.getPlayerID().equals(player.entityID)))
+                    .toList();
+            this.actionQueue.removeAll(actionsToRemove);
 
-            // Remove the actions that have been processed
-            this.actionQueue.removeAll(playerActions);
-        });
-
-        this.npcs.forEach(npc -> {
-            npc.update();
-        });
-
-        itemsManager.updateDespawnTimers();
-        sentGameStateToConnections();
-
+            this.npcs.forEach(npc -> npc.update());
+            itemsManager.updateDespawnTimers();
+            sentGameStateToConnections();
+        } catch (Exception e) {
+            Logger.printError("Error in gameTick: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void sentGameStateToConnections() {
@@ -198,6 +210,8 @@ public class World {
         this.tickAttackEvents.clear();
         this.tickTalkEvents.clear();
         this.tickTradeEvents.clear();
+        this.tickSoundEvents.clear();
+        this.tickMagicEvents.clear();
     }
 
     private <T extends Chunkable> List<T> getEntitiesInCurrentAndNeighborChunks(Player player, List<T> entities,
@@ -213,6 +227,8 @@ public class World {
         List<DTONpc> dtoNpcs = this.npcs.stream().map(npc -> new DTONpc(npc)).toList();
 
         GameState newGameState = new GameState(this.tickAttackEvents, this.tickTalkEvents, this.tickTradeEvents,
+                this.tickSoundEvents,
+                this.tickMagicEvents,
                 dtoPlayers, dtoNpcs,
                 this.chatMessages,
                 this.items, null, this.onlinePlayers, this.shopsManager.getShops());
@@ -307,11 +323,7 @@ public class World {
     }
 
     private void setInitialNpcs() {
-        addNpc(NpcConstants.GOBLIN, 82, 59, 7);
-        addNpc(NpcConstants.GOBLIN, 78, 52, 7);
-        addNpc(NpcConstants.GOBLIN, 84, 58, 10);
-        addNpc(NpcConstants.GOBLIN, 80, 67, 10);
-        addNpc(NpcConstants.GOBLIN, 73, 65, 10);
+
         addNpc(NpcConstants.DUKE, 71, 23, 10);
         addNpc(NpcConstants.SHOPKEEPER, 69, 21, 2);
 
@@ -321,12 +333,6 @@ public class World {
 
         addNpc(NpcConstants.PRIEST, 81, 37, 4);
         addNpc(NpcConstants.GUARD, 43, 32, 4);
-        addNpc(NpcConstants.BAT, 56, 56, 8);
-
-        addNpc(NpcConstants.CHICKEN, 79, 19, 5);
-        addNpc(NpcConstants.CHICKEN, 84, 20, 5);
-        addNpc(NpcConstants.CHICKEN, 82, 13, 4);
-        addNpc(NpcConstants.CHICKEN, 87, 15, 4);
 
         addNpc(NpcConstants.ACOLYTE, 50, 60, 3);
         addNpc(NpcConstants.BANDIT, 131, 86, 4);

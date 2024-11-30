@@ -14,14 +14,14 @@ public class Item {
     private Integer worldY = null;
 
     public Item(int itemID, String name, String examine, boolean isWieldable, boolean isStackable, String spriteName,
-            int Value) {
+            int value) {
         this.itemID = itemID;
         this.name = name;
         this.examine = examine;
         this.isWieldable = isWieldable;
         this.isStackable = isStackable;
         this.spriteName = spriteName;
-        this.value = Value;
+        this.value = value;
         this.amount = 1;
     }
 

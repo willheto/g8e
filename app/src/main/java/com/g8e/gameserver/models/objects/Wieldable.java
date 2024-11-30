@@ -1,7 +1,5 @@
 package com.g8e.gameserver.models.objects;
 
-import com.g8e.util.Logger;
-
 public class Wieldable {
     int itemID;
     int accuracyBonus;
@@ -17,7 +15,7 @@ public class Wieldable {
         this.defenceBonus = defenceBonus;
         this.attackSpeed = attackSpeed;
         this.type = type;
-        Logger.printError(type);
+
     }
 
     public int getItemID() {

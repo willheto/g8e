@@ -109,8 +109,8 @@ public class RegisterServer {
         String SQL_INSERT_PLAYER = "INSERT INTO players "
                 + "(account_id, skin_color, hair_color, shirt_color, pants_color, world_x, world_y, weapon, inventory, inventoryAmounts, "
                 + "quest_progress, attack_experience, defence_experience, "
-                + "strength_experience, hitpoints_experience) "
-                + "VALUES (?, 0, 0, 0, 0, 75, 25, null, ?, ?, ?, 0, 0, 0, 1200)";
+                + "strength_experience, hitpoints_experience, magic_experience) "
+                + "VALUES (?, 0, 0, 0, 0, 75, 25, null, ?, ?, ?, 0, 0, 0, 1200, 0)";
 
         try (Connection connection = DatabaseConnection.createDatabaseConnection();
                 var statement = connection.prepareStatement(SQL_INSERT_PLAYER)) {

@@ -104,7 +104,7 @@ public class Npc extends Combatant {
             if (isOneStepAwayFromTarget()) {
                 Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
                 if (entity != null && entity instanceof Combatant) {
-                    ((Combatant) this).attackEntity((Combatant) entity);
+                    ((Combatant) this).attackEntity((Combatant) entity, false);
                     // this.nextTileDirection = null;
                     this.targetTile = null;
                     this.newTargetTile = null;
@@ -135,6 +135,9 @@ public class Npc extends Combatant {
     }
 
     private void updateCounters() {
+        if (this.snareCounter > 0) {
+            this.snareCounter--;
+        }
         if (this.attackTickCounter > 0) {
             this.attackTickCounter--;
         }

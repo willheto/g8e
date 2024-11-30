@@ -9,13 +9,13 @@ public class Quest {
     private QuestReward rewards;
     private Steps steps;
 
-    public Quest(int questID, String name, String description, String start, QuestRequirements QuestRequirements,
+    public Quest(int questID, String name, String description, String start, QuestRequirements questRequirements,
             QuestReward rewards, Steps steps) {
         this.questID = questID;
         this.name = name;
         this.description = description;
         this.start = start;
-        this.requirements = QuestRequirements;
+        this.requirements = questRequirements;
         this.rewards = rewards;
         this.steps = steps;
     }

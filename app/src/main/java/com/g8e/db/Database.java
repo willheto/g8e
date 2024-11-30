@@ -15,11 +15,6 @@ public class Database {
     static {
         Dotenv dotenv = Dotenv.load();
 
-        Logger.printInfo("Connecting to the database");
-        Logger.printInfo(dotenv.get("DB_URL"));
-        Logger.printInfo(dotenv.get("DB_USERNAME"));
-        Logger.printInfo(dotenv.get("DB_PASSWORD"));
-
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(dotenv.get("DB_URL"));
         config.setUsername(dotenv.get("DB_USERNAME"));

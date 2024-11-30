@@ -218,8 +218,9 @@ public class ItemsManager {
     public void updateDespawnTimers() {
         for (int i = 0; i < despawningItems.length; i++) {
             DespawningItem despawningItem = despawningItems[i];
-            if (despawningItem == null)
+            if (despawningItem == null) {
                 continue;
+            }
             if (world.items.stream().noneMatch(item -> item.getUniqueID().equals(despawningItem.getUniqueItemID()))) {
                 despawningItems[i] = null;
                 continue;

@@ -6,6 +6,7 @@ import java.util.Objects;
 import com.g8e.gameserver.enums.Direction;
 import com.g8e.gameserver.models.Chunkable;
 import com.g8e.gameserver.models.entities.Player;
+import com.g8e.gameserver.models.spells.Spell;
 import com.g8e.gameserver.pathfinding.PathNode;
 
 public class DTOPlayer implements Chunkable {
@@ -18,6 +19,10 @@ public class DTOPlayer implements Chunkable {
     public int hairColor;
     public int shirtColor;
     public int pantsColor;
+    public int teleportCounter;
+    public int spellCounter;
+    public String spellTarget;
+    public Spell spellUsed;
 
     // Combatant fields
     public int[] skills;
@@ -60,6 +65,10 @@ public class DTOPlayer implements Chunkable {
         this.hairColor = player.hairColor;
         this.shirtColor = player.shirtColor;
         this.pantsColor = player.pantsColor;
+        this.teleportCounter = player.teleportCounter;
+        this.spellCounter = player.spellCounter;
+        this.spellTarget = player.spellTarget;
+        this.spellUsed = player.spellUsed;
 
         this.skills = player.skills;
         this.currentHitpoints = player.currentHitpoints;
@@ -89,6 +98,7 @@ public class DTOPlayer implements Chunkable {
         this.examine = player.examine;
         this.currentChunk = player.currentChunk;
         this.currentPath = player.currentPath;
+
     }
 
     @Override
@@ -136,7 +146,11 @@ public class DTOPlayer implements Chunkable {
                 Objects.equals(this.facingDirection, other.facingDirection) &&
                 Objects.equals(this.name, other.name) &&
                 Objects.equals(this.examine, other.examine) &&
-                this.currentChunk == other.currentChunk;
+                this.currentChunk == other.currentChunk &&
+                this.teleportCounter == other.teleportCounter &&
+                this.spellCounter == other.spellCounter &&
+                Objects.equals(this.spellTarget, other.spellTarget) &&
+                Objects.equals(this.spellUsed, other.spellUsed);
     }
 
     public String getEntityID() {

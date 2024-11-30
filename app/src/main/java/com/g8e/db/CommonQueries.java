@@ -69,7 +69,8 @@ public class CommonQueries {
                         rs.getInt("attack_experience"),
                         rs.getInt("strength_experience"),
                         rs.getInt("defence_experience"),
-                        rs.getInt("hitpoints_experience"));
+                        rs.getInt("hitpoints_experience"),
+                        rs.getInt("magic_experience"));
             }
             return null;
         }

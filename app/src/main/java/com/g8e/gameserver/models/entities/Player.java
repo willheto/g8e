@@ -9,13 +9,16 @@ import com.g8e.gameserver.World;
 import com.g8e.gameserver.models.ChatMessage;
 import com.g8e.gameserver.models.Shop;
 import com.g8e.gameserver.models.Stock;
+import com.g8e.gameserver.models.events.SoundEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
+import com.g8e.gameserver.models.events.MagicEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
 import com.g8e.gameserver.models.objects.Edible;
 import com.g8e.gameserver.models.objects.Item;
 import com.g8e.gameserver.models.objects.Wieldable;
 import com.g8e.gameserver.models.quests.Quest;
 import com.g8e.gameserver.models.quests.QuestReward;
+import com.g8e.gameserver.models.spells.Spell;
 import com.g8e.gameserver.util.ExperienceUtils;
 import com.g8e.gameserver.util.SkillUtils;
 import com.g8e.util.Logger;
@@ -27,6 +30,7 @@ import com.g8e.gameserver.network.actions.drop.DropItemAction;
 import com.g8e.gameserver.network.actions.edibles.EatItemAction;
 import com.g8e.gameserver.network.actions.inventory.AddItemToInventoryAction;
 import com.g8e.gameserver.network.actions.inventory.RemoveItemFromInventoryAction;
+import com.g8e.gameserver.network.actions.magic.CastSpellAction;
 import com.g8e.gameserver.network.actions.move.ForceNpcAttackPlayerAction;
 import com.g8e.gameserver.network.actions.move.PlayerAttackMove;
 import com.g8e.gameserver.network.actions.move.PlayerMove;
@@ -54,6 +58,9 @@ public class Player extends Combatant {
     public int shirtColor;
     public int pantsColor;
     public boolean needsFullChunkUpdate = false;
+    public int teleportCounter = 0;
+    public int spellCounter = 0;
+    public String spellTarget = null;
 
     public Player(World world, DBPlayer dbPlayer, String uniquePlayerID, String username, int accountID) {
         super(uniquePlayerID, 0, world, dbPlayer.getWorldX(), dbPlayer.getWorldY(), username,
@@ -97,8 +104,50 @@ public class Player extends Combatant {
     public void update() {
         this.updateCounters();
 
+        if (spellCounter == 1) {
+            if (spellUsed != null) {
+                if (spellUsed.getSpellID() == 3) {
+                    Entity target = this.world.getEntityByID(this.spellTarget);
+                    if (target != null && target instanceof Combatant) {
+                        ((Combatant) target).snareCounter = 10;
+                        this.world.chatMessages
+                                .add(new ChatMessage(target.name, "A magical force prevents you from moving!",
+                                        System.currentTimeMillis(), false));
+                        SoundEvent soundEvent = new SoundEvent("snare.wav", true, false, target.entityID, true);
+                        this.world.tickMagicEvents.add(new MagicEvent(target.entityID, spellUsed.getSpellID(), false));
+                        this.world.tickSoundEvents.add(soundEvent);
+                    }
+                }
+                if (spellUsed.getSpellID() == 2) {
+                    Entity target = this.world.getEntityByID(this.spellTarget);
+                    if (target != null && target instanceof Combatant) {
+                        SoundEvent soundEvent = new SoundEvent("magic_hit.wav", true, false, target.entityID, true);
+                        this.world.tickMagicEvents.add(new MagicEvent(target.entityID, spellUsed.getSpellID(), false));
+                        this.world.tickSoundEvents.add(soundEvent);
+                        this.attackEntity((Combatant) target, true);
+                    }
+                }
+
+                this.spellUsed = null;
+                this.spellTarget = null;
+            }
+        }
+
         if (isDying) {
             return; // todo, some animation handling? maybe on client side though.
+        }
+
+        if (teleportCounter <= 5 && spellUsed != null && spellUsed.getType() == 1) {
+            this.move(spellUsed.getTargetX(), spellUsed.getTargetY());
+
+            this.needsFullChunkUpdate = true;
+            this.spellUsed = null;
+            SoundEvent soundEvent = new SoundEvent("teleport_arrive.wav", true, false, this.entityID, true);
+            this.world.tickSoundEvents.add(soundEvent);
+        }
+
+        if (teleportCounter > 0) {
+            return;
         }
 
         this.moveTowardsTarget();
@@ -111,6 +160,7 @@ public class Player extends Combatant {
 
             if (goalAction == 2) {
                 Entity target = this.world.getEntityByID(((Combatant) this).targetedEntityID);
+
                 if (target.isDying == true) {
                     this.targetedEntityID = null;
                     this.goalAction = null;
@@ -125,7 +175,7 @@ public class Player extends Combatant {
                 if (goalAction == 2) {
                     Entity entity = this.world.getEntityByID(((Combatant) this).targetedEntityID);
                     if (entity != null && entity instanceof Combatant) {
-                        ((Combatant) this).attackEntity((Combatant) entity);
+                        ((Combatant) this).attackEntity((Combatant) entity, false);
                         this.nextTileDirection = null;
                         this.targetTile = null;
                         this.newTargetTile = null;
@@ -203,8 +253,18 @@ public class Player extends Combatant {
 
     public void takeItem(String uniqueItemID) {
         Item item = this.world.itemsManager.getItemByUniqueItemID(uniqueItemID);
+        if (item == null) {
+            Logger.printError("Item not found");
+            this.world.chatMessages
+                    .add(new ChatMessage(this.name, "Too late, it's gone!", System.currentTimeMillis(), false));
+            return;
+        }
         addItemToInventory(item.getItemID(), item.getAmount());
         this.world.itemsManager.removeItem(item.getUniqueID());
+
+        SoundEvent soundEvent = new SoundEvent("pick_up.wav", true, false, this.entityID, false);
+        this.world.tickSoundEvents.add(soundEvent);
+
     }
 
     public void saveQuestProgress() {
@@ -260,6 +320,23 @@ public class Player extends Combatant {
             long timeSent = System.currentTimeMillis();
             ChatMessage chatMessageModel = new ChatMessage(this.name, levelUpMessage, timeSent, false);
             this.world.chatMessages.add(chatMessageModel);
+
+            if (skill == SkillUtils.ATTACK) {
+                SoundEvent soundEvent = new SoundEvent("attack_level_up.ogg", true, true, this.entityID, true);
+                this.world.tickSoundEvents.add(soundEvent);
+            } else if (skill == SkillUtils.STRENGTH) {
+                SoundEvent soundEvent = new SoundEvent("strength_level_up.ogg", true, true, this.entityID, false);
+                this.world.tickSoundEvents.add(soundEvent);
+            } else if (skill == SkillUtils.DEFENCE) {
+                SoundEvent soundEvent = new SoundEvent("defence_level_up.ogg", true, true, this.entityID, false);
+                this.world.tickSoundEvents.add(soundEvent);
+            } else if (skill == SkillUtils.MAGIC) {
+                SoundEvent soundEvent = new SoundEvent("magic_level_up.ogg", true, true, this.entityID, false);
+                this.world.tickSoundEvents.add(soundEvent);
+            } else if (skill == SkillUtils.HITPOINTS) {
+                SoundEvent soundEvent = new SoundEvent("hitpoints_level_up.ogg", true, true, this.entityID, false);
+                this.world.tickSoundEvents.add(soundEvent);
+            }
 
         }
 
@@ -512,6 +589,154 @@ public class Player extends Combatant {
                     this.newTargetTile = new TilePosition(entity.worldX, entity.worldY);
                 }
             }
+
+            if (action instanceof CastSpellAction) {
+                CastSpellAction castSpellAction = (CastSpellAction) action;
+                this.castSpell(castSpellAction.getSpellID(), castSpellAction.getTargetID());
+            }
+        }
+    }
+
+    private void castSpell(int spellID, String targetID) {
+        if (spellCounter > 0) {
+            this.world.chatMessages.add(
+                    new ChatMessage(this.name, "You're already casting a spell!", System.currentTimeMillis(), false));
+            return;
+        }
+        Spell spell = world.spellsManager.getSpellByID(spellID);
+
+        if (spell == null) {
+            Logger.printError("Spell not found");
+            return;
+        }
+
+        int levelRequirement = spell.getLevelRequirement();
+        int playerMagicLevel = ExperienceUtils.getLevelByExp(this.skills[SkillUtils.MAGIC]);
+
+        if (playerMagicLevel < levelRequirement) {
+            this.world.chatMessages.add(
+                    new ChatMessage(this.name, "You need a magic level of " + levelRequirement + " to cast this spell.",
+                            System.currentTimeMillis(), false));
+            return;
+        }
+
+        if (spell.getType() == 1) { // Teleport spell
+            if (spell.getTargetX() == -1 || spell.getTargetY() == -1) {
+                Logger.printError("Spell target not set");
+                return;
+            }
+
+            if (teleportCounter > 0) {
+                this.world.chatMessages.add(new ChatMessage(this.name, "You are already teleporting!",
+                        System.currentTimeMillis(), false));
+                return;
+            }
+            // move to next
+            this.clearTarget();
+
+            if (this.nextTileDirection != null) {
+                moveToNextTile();
+                this.nextTileDirection = null;
+                this.currentPath = null;
+            }
+
+            SoundEvent soundEvent = new SoundEvent("teleport.wav", true, false, this.entityID, true);
+            this.world.tickSoundEvents.add(soundEvent);
+            this.teleportCounter = 10;
+            this.spellUsed = spell;
+            this.world.tickMagicEvents.add(new MagicEvent(entityID, spellID, true));
+
+            // check if anyone is targeting this player
+            for (Player player : world.players) {
+                if (player.targetedEntityID != null && player.targetedEntityID.equals(this.entityID)) {
+                    player.clearTarget();
+                }
+            }
+
+            for (Npc npc : world.npcs) {
+                if (npc.targetedEntityID != null && npc.targetedEntityID.equals(this.entityID)) {
+                    npc.clearTarget();
+                }
+            }
+        } else {
+            if (targetID == null) {
+                Logger.printError("Target not set");
+                return;
+            }
+
+            if (targetID.equals(this.entityID)) {
+                Logger.printError("Cannot cast spell on self");
+                this.world.chatMessages.add(new ChatMessage(this.name, "You cannot cast this spell on yourself.",
+                        System.currentTimeMillis(), false));
+                return;
+            }
+
+            Entity target = this.world.getEntityByID(targetID);
+
+            if (target == null) {
+                Logger.printError("Target not found");
+                return;
+            }
+
+            if (target.type == 1) {
+                this.world.chatMessages.add(new ChatMessage(this.name, "You wouldn't want to do that.",
+                        System.currentTimeMillis(), false));
+                return;
+            }
+
+            if (teleportCounter > 0) {
+                this.world.chatMessages.add(new ChatMessage(this.name, "Cannot cast while teleporting!",
+                        System.currentTimeMillis(), false));
+                return;
+            }
+
+            // face the target
+            this.facingDirection = this.getDirectionTowardsTile(target.worldX, target.worldY);
+
+            this.clearTarget();
+
+            if (this.nextTileDirection != null) {
+                moveToNextTile();
+                this.nextTileDirection = null;
+                this.currentPath = null;
+            }
+
+            if (spell.getSpellID() == 3) { // snare
+                if (target instanceof Combatant) {
+                    int distance = Math.abs(this.worldX - target.worldX) + Math.abs(this.worldY - target.worldY);
+
+                    if (distance > 7) {
+                        this.world.chatMessages.add(new ChatMessage(this.name, "The target is too far away.",
+                                System.currentTimeMillis(), false));
+                        return;
+                    }
+
+                    this.spellUsed = spell;
+                    this.spellCounter = 4;
+                    this.spellTarget = targetID;
+                    this.world.tickMagicEvents.add(new MagicEvent(this.entityID, spellID, true));
+                }
+            }
+
+            if (spell.getSpellID() == 2) {
+                if (target instanceof Combatant) {
+                    int distance = Math.abs(this.worldX - target.worldX) + Math.abs(this.worldY - target.worldY);
+
+                    if (distance > 7) {
+                        this.world.chatMessages.add(new ChatMessage(this.name, "The target is too far away.",
+                                System.currentTimeMillis(), false));
+                        return;
+                    }
+
+                    this.spellUsed = spell;
+                    this.spellCounter = 4;
+                    this.spellTarget = targetID;
+                    this.world.tickMagicEvents.add(new MagicEvent(this.entityID, spellID, true));
+                    SoundEvent soundEvent = new SoundEvent("magic_cast.wav", true, false, target.entityID, true);
+                    this.world.tickSoundEvents.add(soundEvent);
+
+                }
+            }
         }
     }
 
@@ -701,6 +926,11 @@ public class Player extends Combatant {
         }
 
         Item item = world.itemsManager.getItemByID(itemID);
+        if (item == null) {
+            Logger.printError("Item not found in items manager, buy action failed.");
+            this.world.addChatMessage(new ChatMessage(this.name, "Item not found", System.currentTimeMillis(), false));
+            return;
+        }
 
         int availableAmount = amount;
         if (stock.getQuantity() < amount) {
@@ -857,6 +1087,7 @@ public class Player extends Combatant {
     }
 
     private void eatItem(int inventoryIndex) {
+
         if (inventoryIndex < 0 || inventoryIndex >= this.inventory.length) {
             Logger.printError("Invalid inventory index");
             return;
@@ -884,6 +1115,10 @@ public class Player extends Combatant {
         if (this.currentHitpoints > ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS])) {
             this.currentHitpoints = ExperienceUtils.getLevelByExp(this.skills[SkillUtils.HITPOINTS]);
         }
+
+        SoundEvent soundEvent = new SoundEvent("eat.wav", true, false, this.entityID, false);
+        this.world.tickSoundEvents.add(soundEvent);
+        this.attackTickCounter = 4;
 
     }
 
@@ -923,8 +1158,10 @@ public class Player extends Combatant {
         if (progress == 100) { // 100 is the completion value
             ChatMessage chatMessage = new ChatMessage(this.name, "Congratulations, you've completed a quest!",
                     System.currentTimeMillis(), false);
-            this.world.chatMessages.add(chatMessage);
 
+            this.world.chatMessages.add(chatMessage);
+            SoundEvent soundEvent = new SoundEvent("quest_complete.ogg", true, true, this.entityID, false);
+            this.world.tickSoundEvents.add(soundEvent);
             Quest quest = this.world.questsManager.getQuestByID(questID);
             QuestReward reward = quest.getRewards();
             influence += reward.getInfluenceReward();
@@ -957,6 +1194,7 @@ public class Player extends Combatant {
                 }
 
                 saveInventory();
+
             }
 
         }
@@ -1014,6 +1252,8 @@ public class Player extends Combatant {
             this.world.itemsManager.spawnItem(this.worldX, this.worldY, itemID, 200);
         }
 
+        SoundEvent soundEvent = new SoundEvent("drop.wav", true, false, this.entityID, false);
+        this.world.tickSoundEvents.add(soundEvent);
         saveInventory();
     }
 
@@ -1085,6 +1325,16 @@ public class Player extends Combatant {
     }
 
     private void updateCounters() {
+        if (this.snareCounter > 0) {
+            this.snareCounter--;
+        }
+        if (this.spellCounter > 0) {
+            this.spellCounter--;
+        }
+
+        if (this.teleportCounter > 0) {
+            this.teleportCounter--;
+        }
         if (this.attackTickCounter > 0) {
             this.attackTickCounter--;
         }
@@ -1118,6 +1368,7 @@ public class Player extends Combatant {
         this.skills[SkillUtils.STRENGTH] = player.getStrengthExperience();
         this.skills[SkillUtils.DEFENCE] = player.getDefenceExperience();
         this.skills[SkillUtils.HITPOINTS] = player.getHitpointsExperience();
+        this.skills[SkillUtils.MAGIC] = player.getMagicExperience();
     }
 
     private void loadPlayerInventory(DBPlayer player) {

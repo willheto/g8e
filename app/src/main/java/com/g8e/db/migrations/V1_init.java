@@ -44,7 +44,8 @@ public class V1_init {
             + "attack_experience INT,"
             + "defence_experience INT,"
             + "strength_experience INT,"
-            + "hitpoints_experience INT"
+            + "hitpoints_experience INT,"
+            + "magic_experience INT"
             + ");";
 
     public void up() {

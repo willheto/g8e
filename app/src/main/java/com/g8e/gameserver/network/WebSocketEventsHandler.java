@@ -17,7 +17,9 @@ import com.g8e.gameserver.models.ChatMessage;
 import com.g8e.gameserver.models.Chunkable;
 import com.g8e.gameserver.models.entities.Player;
 import com.g8e.gameserver.models.events.AttackEvent;
+import com.g8e.gameserver.models.events.SoundEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
+import com.g8e.gameserver.models.events.MagicEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
 import com.g8e.gameserver.network.actions.Action;
 import com.g8e.gameserver.network.actions.ChangeAppearanceAction;
@@ -27,6 +29,7 @@ import com.g8e.gameserver.network.actions.drop.DropItemAction;
 import com.g8e.gameserver.network.actions.edibles.EatItemAction;
 import com.g8e.gameserver.network.actions.inventory.AddItemToInventoryAction;
 import com.g8e.gameserver.network.actions.inventory.RemoveItemFromInventoryAction;
+import com.g8e.gameserver.network.actions.magic.CastSpellAction;
 import com.g8e.gameserver.network.actions.move.ForceNpcAttackPlayerAction;
 import com.g8e.gameserver.network.actions.move.PlayerAttackMove;
 import com.g8e.gameserver.network.actions.move.PlayerAttackMoveData;
@@ -103,8 +106,12 @@ public class WebSocketEventsHandler {
             List<AttackEvent> attackEvents = new ArrayList<>();
             List<TalkEvent> talkEvents = new ArrayList<>();
             List<TradeEvent> tradeEvents = new ArrayList<>();
+            List<SoundEvent> soundEvents = new ArrayList<>();
+            List<MagicEvent> magicEvents = new ArrayList<>();
 
             GameState gameState = new GameState(attackEvents, talkEvents, tradeEvents,
+                    soundEvents,
+                    magicEvents,
                     playersInCurrentAndNeighborChunks,
                     npcsInCurrentAndNeighborChunks,
                     world.getChatMessages(),
@@ -259,6 +266,10 @@ public class WebSocketEventsHandler {
             case "tradeMove":
                 TradeMoveAction tradeMoveAction = gson.fromJson(message, TradeMoveAction.class);
                 this.world.enqueueAction(tradeMoveAction);
+                break;
+            case "castSpell":
+                CastSpellAction castSpellAction = gson.fromJson(message, CastSpellAction.class);
+                this.world.enqueueAction(castSpellAction);
                 break;
 
             default:

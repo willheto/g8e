@@ -7,7 +7,9 @@ import java.util.Objects;
 
 import com.g8e.gameserver.models.ChatMessage;
 import com.g8e.gameserver.models.events.AttackEvent;
+import com.g8e.gameserver.models.events.SoundEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
+import com.g8e.gameserver.models.events.MagicEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
 import com.g8e.gameserver.models.objects.Item;
 import com.g8e.gameserver.network.dataTransferModels.DTONpc;
@@ -19,6 +21,8 @@ public class GameStateComparator {
         List<AttackEvent> changedAttackEvents = newState.getTickAttackEvents();
         List<TalkEvent> changedTalkEvents = newState.getTickTalkEvents();
         List<TradeEvent> changedTradeEvents = newState.getTickTradeEvents();
+        List<SoundEvent> changedSoundEvents = newState.getTickSoundEvents();
+        List<MagicEvent> changedMagicEvents = newState.getTickMagicEvents();
         List<DTOPlayer> changedPlayers = getChangedPlayers(oldState.getPlayers(), newState.getPlayers());
         List<DTONpc> changedNpcs = getChangedNpcs(oldState.getNpcs(), newState.getNpcs());
         List<ChatMessage> changedChatMessages = newState.getChatMessages();
@@ -32,6 +36,8 @@ public class GameStateComparator {
                 changedAttackEvents,
                 changedTalkEvents,
                 changedTradeEvents,
+                changedSoundEvents,
+                changedMagicEvents,
                 changedPlayers.isEmpty() ? Collections.emptyList() : changedPlayers,
                 changedNpcs.isEmpty() ? Collections.emptyList() : changedNpcs,
                 changedChatMessages,
@@ -54,7 +60,7 @@ public class GameStateComparator {
             DTONpc oldNpc = i < oldNpcs.size() ? oldNpcs.get(i) : null;
             DTONpc newNpc = i < newNpcs.size() ? newNpcs.get(i) : null;
             // Add only if there is a change between the old npc and new npc
-            if (!newNpc.equals(oldNpc)) {
+            if (newNpc != null && !newNpc.equals(oldNpc)) {
                 changedNpcs.add(newNpc);
             }
         }

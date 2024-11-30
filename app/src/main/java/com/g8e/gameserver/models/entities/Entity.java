@@ -47,6 +47,7 @@ public abstract class Entity implements Chunkable {
     public int wanderRange = 5;
     public int interactionRange = 1;
     public String interactionTargetID = null;
+    public int snareCounter;
 
     public Entity(String entityID, int entityIndex, World world, int worldX, int worldY, String name, String examine,
             int type) {
@@ -168,24 +169,43 @@ public abstract class Entity implements Chunkable {
 
     }
 
-    protected void moveTowardsTarget() {
-        if (this.nextTileDirection != null) {
-            // always move in the direction of the next tile
-            switch (this.nextTileDirection) {
-                case UP:
-                    move(this.worldX, this.worldY - 1);
-                    break;
-                case DOWN:
-                    move(this.worldX, this.worldY + 1);
-                    break;
-                case LEFT:
-                    move(this.worldX - 1, this.worldY);
-                    break;
-                case RIGHT:
-                    move(this.worldX + 1, this.worldY);
-                    break;
-            }
+    protected void moveToNextTile() {
+        if (this.nextTileDirection == null) {
+            return;
         }
+        switch (this.nextTileDirection) {
+            case UP:
+                move(this.worldX, this.worldY - 1);
+                break;
+            case DOWN:
+                move(this.worldX, this.worldY + 1);
+                break;
+            case LEFT:
+                move(this.worldX - 1, this.worldY);
+                break;
+            case RIGHT:
+                move(this.worldX + 1, this.worldY);
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    protected void moveTowardsTarget() {
+        if (this.snareCounter > 0) {
+            moveToNextTile();
+            this.nextTileDirection = null;
+            this.world.chatMessages
+                    .add(new ChatMessage(name, "A magical force prevents you from moving!", System.currentTimeMillis(),
+                            false));
+            return;
+        }
+
+        if (this.nextTileDirection != null) {
+            moveToNextTile();
+        }
+
         if (this instanceof Combatant && ((Combatant) this).targetedEntityID != null) {
             setAttackTargetTile();
         }

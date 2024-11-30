@@ -21,6 +21,7 @@ public class DBPlayer {
     private int strength_experience;
     private int defence_experience;
     private int hitpoints_experience;
+    private int magic_experience;
     private int skin_color;
     private int hair_color;
     private int shirt_color;
@@ -31,7 +32,8 @@ public class DBPlayer {
             int world_y, Integer weapon, Integer shield, Integer helmet, Integer body_armor, Integer leg_armor,
             Integer gloves, Integer boots, Integer neckwear, Integer ring, int[] inventory, int[] inventoryAmounts,
             int[] quest_progress,
-            int attack_experience, int strength_experience, int defence_experience, int hitpoints_experience) {
+            int attack_experience, int strength_experience, int defence_experience, int hitpoints_experience,
+            int magic_experience) {
         this.player_id = player_id;
         this.account_id = account_id;
         this.world_x = world_x;
@@ -44,6 +46,7 @@ public class DBPlayer {
         this.defence_experience = defence_experience;
         this.strength_experience = strength_experience;
         this.hitpoints_experience = hitpoints_experience;
+        this.magic_experience = magic_experience;
         this.skin_color = skin_color;
         this.hair_color = hair_color;
         this.shirt_color = shirt_color;
@@ -160,6 +163,10 @@ public class DBPlayer {
 
     public Integer getRing() {
         return ring;
+    }
+
+    public int getMagicExperience() {
+        return magic_experience;
     }
 
 }
