@@ -411,22 +411,6 @@ public class Player extends Combatant {
                 }
                 Entity entity = this.world.getEntityByID(playerAttackMove.getEntityID());
 
-                if (entity instanceof Npc) {
-                    if (((Npc) entity).isInCombat && ((Npc) entity).targetedEntityID != this.entityID) {
-                        world.chatMessages.add(new ChatMessage(this.name, "He's already fighting someone else!",
-                                System.currentTimeMillis(), false));
-                        return;
-                    }
-                }
-
-                if (entity instanceof Player) {
-                    if (((Player) entity).isInCombat && ((Player) entity).targetedEntityID != this.entityID) {
-                        world.chatMessages.add(new ChatMessage(this.name, "He's already fighting someone else!",
-                                System.currentTimeMillis(), false));
-                        return;
-                    }
-                }
-
                 this.newTargetTile = new TilePosition(npc.worldX, npc.worldY);
                 this.targetedEntityID = playerAttackMove.getEntityID();
                 this.goalAction = 2; // Attack action TODO
