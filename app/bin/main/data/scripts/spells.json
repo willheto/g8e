@@ -25,15 +25,6 @@
     "targetY": null
   },
   {
-    "spellID": 4,
-    "name": "Fire Burst",
-    "type": 2,
-    "level_req": 2,
-    "targetX": null,
-    "targetY": null,
-    "maxHit": 7
-  },
-  {
     "spellID": 5,
     "name": "Pasanen Village teleport",
     "type": 1,

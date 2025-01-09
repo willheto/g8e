@@ -9,9 +9,9 @@ import com.g8e.gameserver.World;
 import com.g8e.gameserver.models.ChatMessage;
 import com.g8e.gameserver.models.Shop;
 import com.g8e.gameserver.models.Stock;
+import com.g8e.gameserver.models.events.MagicEvent;
 import com.g8e.gameserver.models.events.SoundEvent;
 import com.g8e.gameserver.models.events.TalkEvent;
-import com.g8e.gameserver.models.events.MagicEvent;
 import com.g8e.gameserver.models.events.TradeEvent;
 import com.g8e.gameserver.models.objects.Edible;
 import com.g8e.gameserver.models.objects.Item;
@@ -19,10 +19,6 @@ import com.g8e.gameserver.models.objects.Wieldable;
 import com.g8e.gameserver.models.quests.Quest;
 import com.g8e.gameserver.models.quests.QuestReward;
 import com.g8e.gameserver.models.spells.Spell;
-import com.g8e.gameserver.util.ExperienceUtils;
-import com.g8e.gameserver.util.SkillUtils;
-import com.g8e.util.Logger;
-import com.google.gson.Gson;
 import com.g8e.gameserver.network.actions.Action;
 import com.g8e.gameserver.network.actions.ChangeAppearanceAction;
 import com.g8e.gameserver.network.actions.attackStyle.ChangeAttackStyleAction;
@@ -44,8 +40,13 @@ import com.g8e.gameserver.network.actions.use.UseItemAction;
 import com.g8e.gameserver.network.actions.wield.UnwieldAction;
 import com.g8e.gameserver.network.actions.wield.WieldItemAction;
 import com.g8e.gameserver.tile.TilePosition;
+import com.g8e.gameserver.util.ExperienceUtils;
+import com.g8e.gameserver.util.SkillUtils;
+import com.g8e.util.Logger;
+import com.google.gson.Gson;
 
 public class Player extends Combatant {
+
     private static final int playerStartingX = 75;
     private static final int playerStartingY = 25;
     public int accountID;
@@ -196,7 +197,11 @@ public class Player extends Combatant {
                         this.goalAction = null;
                         this.targetedEntityID = null;
                         TalkEvent talkEvent = new TalkEvent(this.entityID, entity.entityID, entity.entityIndex);
-                        entity.interactionTargetID = this.entityID;
+
+                        if (entity instanceof Combatant && ((Combatant) entity).targetedEntityID == null) {
+                            entity.interactionTargetID = this.entityID;
+                        }
+
                         int entityX = entity.worldX;
                         int entityY = entity.worldY;
 
@@ -243,8 +248,8 @@ public class Player extends Combatant {
             return false;
         }
 
-        if ((Math.abs(this.worldX - target.worldX) == 1 && this.worldY == target.worldY) ||
-                (Math.abs(this.worldY - target.worldY) == 1 && this.worldX == target.worldX)) {
+        if ((Math.abs(this.worldX - target.worldX) == 1 && this.worldY == target.worldY)
+                || (Math.abs(this.worldY - target.worldY) == 1 && this.worldX == target.worldX)) {
             return true;
         }
 
@@ -831,7 +836,6 @@ public class Player extends Combatant {
         addCoins((int) totalSellPrice);
 
         // Update the shop's stock
-
         // if shop already has item on stock-> add amount to stock
         if (stock != null) {
             if (stock.getQuantity() + amount > Integer.MAX_VALUE) {

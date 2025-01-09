@@ -156,6 +156,7 @@ public abstract class Combatant extends Entity {
 
         if (entity instanceof Npc) {
             if (entity.targetedEntityID == null) {
+                entity.interactionTargetID = null;
                 entity.targetedEntityID = this.entityID;
                 entity.targetTile = null;
                 entity.newTargetTile = null;
